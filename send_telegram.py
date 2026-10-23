@@ -113,9 +113,10 @@ def main():
     msg = build_message(sig, acct, os.environ.get("APP_URL", ""))
     if a.dry_run:
         print(msg); return 0
-    token, chat = os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
+    token, chat = (os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip(), (os.environ.get("TELEGRAM_CHAT_ID") or "").strip()
     if not token or not chat:
         print("TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not set; skipping send"); return 0
+    if token.lower().startswith("bot"): token = token[3:]   # tolerate a pasted "bot" prefix
     send(token, chat, msg)
     print("sent")
     return 0

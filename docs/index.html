@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#040b16">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ROBUST V20">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>ROBUST V20</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+:root{
+  --bg0:#040b16;--bg1:#0a1a2e;--card0:#0e2239;--card1:#0a1729;--line:#1a3652;--tile:rgba(255,255,255,.045);
+  --tx:#eaf2ff;--mut:#8aa0bd;--dim:#5f7592;
+  --cyan:#22d3ee;--blue:#4f8dff;--purple:#8b7cf6;--green:#2ee6a0;--red:#ff5c7a;--amber:#ffb547;
+  --font:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg0)}
+body{margin:0;min-height:100vh;word-break:keep-all;color:var(--tx);font-family:var(--font);font-size:15px;line-height:1.5;
+  background:radial-gradient(900px 500px at 70% -5%,#0d2b45 0%,transparent 60%),linear-gradient(180deg,var(--bg1),var(--bg0) 420px);background-color:var(--bg0);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:max(20px,env(safe-area-inset-top,0px)) calc(36px + env(safe-area-inset-bottom,0px))}
+.app{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+/* header */
+.top{display:flex;align-items:center;gap:14px}
+.logo{width:68px;height:68px;border-radius:22px;background:linear-gradient(145deg,#0f5a63,#0a2c3c);display:grid;place-items:center;border:1px solid #1d5a69;flex:none}
+.top h1{margin:0;font-size:30px;font-weight:900;letter-spacing:-.01em;line-height:1.1}
+.top .sub{margin-top:5px;font-size:11.5px;font-weight:700;letter-spacing:.14em;color:var(--cyan);text-transform:uppercase}
+.top .grow{flex:1;min-width:0}
+.iconbtn{width:44px;height:44px;border-radius:14px;background:none;border:0;color:var(--mut);display:grid;place-items:center;flex:none}
+.iconbtn svg{width:26px;height:26px}
+.spin svg{animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.chips{display:flex;gap:10px;flex-wrap:wrap}
+.chip{padding:9px 18px;border-radius:99px;font-weight:700;font-size:15px;border:1.5px solid;background:rgba(255,255,255,.03)}
+.chip.ok{color:var(--green);border-color:#17795a;background:rgba(46,230,160,.08)}
+.chip.cy{color:var(--cyan);border-color:#17687a;background:rgba(34,211,238,.07)}
+.chip.warn{color:var(--amber);border-color:#8a6420;background:rgba(255,181,71,.08)}
+.chip.bad{color:var(--red);border-color:#8a2f42;background:rgba(255,92,122,.08)}
+/* cards */
+.card{border-radius:28px;padding:20px;background:linear-gradient(160deg,var(--card0),var(--card1));border:1px solid var(--line);box-shadow:0 14px 40px rgba(0,0,0,.28);min-width:0}
+.card.tap{cursor:pointer}
+.ch{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.ch h2{margin:0;font-size:clamp(20px,6.2vw,24px);font-weight:900;letter-spacing:-.01em}
+.ch .s{color:var(--mut);font-size:14px;margin-top:2px}
+.chev{color:var(--mut);width:26px;height:26px;flex:none}
+.eyebrow{display:flex;align-items:center;gap:12px;color:var(--mut);font-size:17px;font-weight:500}
+.eyebrow svg{width:36px;height:36px;color:var(--cyan)}
+.clock .row{display:flex;align-items:center;gap:12px}
+.ibox{width:54px;height:54px;border-radius:18px;background:rgba(34,211,238,.1);display:grid;place-items:center;color:var(--cyan);flex:none}
+.ibox svg{width:30px;height:30px}
+.lab{font-size:13px;font-weight:700;letter-spacing:.14em;color:var(--cyan);text-transform:uppercase}
+.big-time{font-size:clamp(16px,5.2vw,27px);font-weight:900;letter-spacing:0;white-space:nowrap}
+.kst{margin-left:8px;padding:2px 9px;font-size:11px;letter-spacing:.06em;vertical-align:middle;border-radius:99px;background:rgba(139,124,246,.15);color:var(--purple);font-weight:700;border:1px solid #4a3f94}
+hr{border:0;border-top:1px solid var(--line);margin:18px 0}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.tile{background:var(--tile);border-radius:20px;padding:14px 16px;min-width:0}
+.tile .k{font-size:13px;color:var(--mut)}
+.tile .v{font-size:clamp(14px,4.2vw,17px);font-weight:700;margin-top:8px;overflow-wrap:anywhere}
+.v.b{color:var(--blue)}.v.g{color:var(--green)}.v.p{color:var(--purple)}.v.a{color:var(--amber)}.v.c{color:var(--cyan)}.v.r{color:var(--red)}
+.hero-t{font-size:clamp(30px,9.4vw,40px);font-weight:900;line-height:1.15;color:var(--cyan);margin:6px 0 4px;letter-spacing:-.02em;overflow-wrap:anywhere}
+.hero-t.warn{color:var(--amber)}.hero-t.ok{color:var(--green)}.hero-t.sell{color:var(--red)}
+.k{color:var(--mut)}
+.expl h3{margin:0 0 10px;font-size:17px}
+.arow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0}
+.arow .n{font-size:22px;font-weight:900}
+.pill{padding:8px 14px;border-radius:99px;font-weight:700;font-size:13px;line-height:1.35;border:1.5px solid;text-align:center;max-width:60%}
+.pill.sell{color:var(--red);border-color:#7d2c40;background:rgba(255,92,122,.1)}
+.pill.wait{color:var(--amber);border-color:#7d5a1f;background:rgba(255,181,71,.1)}
+.pill.buy{color:var(--green);border-color:#17795a;background:rgba(46,230,160,.1)}
+.pill.keep{color:var(--cyan);border-color:#17687a;background:rgba(34,211,238,.08)}
+.txt{margin:10px 0 0;color:var(--tx);overflow-wrap:anywhere}
+.txt.m{color:var(--mut);font-size:13.5px}
+.amber{color:var(--amber);font-size:13.5px;margin:12px 0 4px}
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:16px}
+.trio .k{font-size:12.5px}.trio .v{font-size:clamp(16px,5vw,21px);font-weight:900;margin-top:4px;white-space:nowrap}
+.title-ic{display:flex;gap:16px;align-items:center}
+.title-ic .ibox{background:rgba(34,211,238,.12)}
+.title-ic h3{margin:0;font-size:clamp(20px,6.2vw,26px);font-weight:900;color:var(--cyan);line-height:1.2}
+.title-ic.warn h3{color:var(--amber)}.title-ic.sell h3{color:var(--red)}
+.sec{display:flex;align-items:baseline;justify-content:space-between;margin:6px 4px -6px}
+.sec h2{margin:0;font-size:clamp(26px,8vw,32px);font-weight:900;letter-spacing:-.01em}.sec span{color:var(--mut);font-size:15px;letter-spacing:.04em}
+.pulse{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.etf{border-radius:26px;padding:14px;background:linear-gradient(160deg,var(--card0),var(--card1));border:1px solid var(--line);text-align:left;color:inherit;min-width:0}
+.etf .h{display:flex;justify-content:space-between;align-items:baseline}
+.etf .nm{font-size:22px;font-weight:900}
+.etf .px{font-size:clamp(20px,6vw,24px);font-weight:700;margin:6px 0 12px}
+.etf .dd{display:flex;justify-content:space-between;gap:4px;font-size:12px;color:var(--mut);margin-bottom:6px;white-space:nowrap}
+.etf .hint{font-size:12.5px;color:var(--dim);margin-top:6px}
+svg.spark{display:block;width:100%;height:auto;overflow:visible}
+.chk{display:flex;align-items:center;gap:16px;padding:11px 0}
+.chk .c{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;flex:none}
+.chk .c svg{width:26px;height:26px}
+.chk .c.y{background:rgba(46,230,160,.13);color:var(--green)}.chk .c.n{background:rgba(255,92,122,.13);color:var(--red)}
+.chk .t{font-size:19px;font-weight:700;flex:1}.chk .r{font-weight:700;font-size:15px}
+.r.y{color:var(--green)}.r.n{color:var(--mut)}
+.score3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0 10px}
+.score3 .k{font-size:14px}.score3 .v{font-size:clamp(22px,6.6vw,30px);white-space:nowrap;font-weight:900;margin-top:6px;line-height:1.1}
+.ind{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px 8px;margin-top:18px}
+.ind .k{font-size:13.5px;color:var(--mut);letter-spacing:.04em}.ind .v{font-size:clamp(17px,5.2vw,23px);font-weight:900;margin-top:4px;white-space:nowrap}
+.port{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center;margin:14px 0}
+.donut{width:min(36vw,170px);aspect-ratio:1;display:block}
+.pv .k{font-size:14px;color:var(--mut)}.pv .v{font-size:clamp(20px,6vw,26px);font-weight:900;margin:2px 0 12px;white-space:nowrap}
+.hold{display:flex;align-items:center;gap:12px;padding:8px 0}
+.dot{width:16px;height:16px;border-radius:50%;flex:none}
+.hold .n{font-size:21px;font-weight:900;flex:1}.hold .q{color:var(--mut);font-size:19px}.hold .p{font-size:19px;font-weight:700;min-width:70px;text-align:right}
+.fx .v{font-size:clamp(40px,12vw,52px);font-weight:900;color:var(--amber);letter-spacing:-.02em;line-height:1.1}
+.fx .d{font-size:21px;font-weight:700;margin-left:12px}
+.btns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.bt{border-radius:26px;padding:22px 8px 18px;border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:12px;font-weight:900;font-size:17px;color:var(--tx)}
+.bt svg{width:38px;height:38px}
+.bt.o{background:#1a1626}.bt.o svg{color:var(--red)}.bt.p{background:#0a2430}.bt.p svg{color:var(--cyan)}.bt.s{background:#14193a}.bt.s svg{color:var(--purple)}
+.foot{text-align:center;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:6px}
+.foot svg{width:54px;height:54px;color:var(--green)}
+.foot .a{font-size:17px;letter-spacing:.02em}.foot .b{font-size:13px;color:var(--dim)}
+.foot a{color:var(--cyan);text-decoration:none;font-weight:700;font-size:14px}
+.banner{border-radius:18px;padding:12px 16px;font-size:14px;font-weight:500}
+.banner.w{background:rgba(255,181,71,.12);color:var(--amber);border:1px solid #7d5a1f}
+.banner.r{background:rgba(255,92,122,.12);color:var(--red);border:1px solid #7d2c40}
+/* sheet */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:none;align-items:flex-end;justify-content:center}
+.ov.on{display:flex}
+.sheet{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:linear-gradient(170deg,#102640,#091526);border:1px solid var(--line);border-radius:30px 30px 0 0;padding:22px max(18px,env(safe-area-inset-left,0px)) calc(28px + env(safe-area-inset-bottom,0px));animation:up .18s ease-out}
+@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+.sheet h2{margin:0 0 4px;font-size:26px;font-weight:900}
+.sheet .x{float:right}
+.field{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.field label{font-size:13px;color:var(--mut);display:block;margin-bottom:4px}
+input[type=number]{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:14px;color:var(--tx);font:inherit;font-size:17px;padding:12px 14px;min-width:0}
+.btn{border:0;border-radius:16px;padding:14px 20px;font-weight:900;font-size:16px;background:var(--cyan);color:#04202a}
+.btn.g{background:rgba(255,255,255,.08);color:var(--tx)}
+.row2{display:flex;gap:10px;margin-top:14px}.row2 .btn{flex:1}
+.ord{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.ord .tag{padding:7px 14px;border-radius:99px;font-weight:900;font-size:14px}
+.tag.s{background:rgba(255,92,122,.14);color:var(--red)}.tag.b{background:rgba(46,230,160,.14);color:var(--green)}
+.ord .n{font-weight:900;font-size:19px;flex:1}.ord .q{text-align:right;font-weight:900;font-size:19px}.ord .q small{display:block;color:var(--mut);font-weight:500;font-size:13px}
+table.t{width:100%;border-collapse:collapse;font-size:14.5px;margin-top:8px}
+.t td,.t th{padding:9px 4px;border-bottom:1px solid var(--line);text-align:right}.t th{color:var(--mut);font-weight:500;font-size:12.5px}.t td:first-child,.t th:first-child{text-align:left}
+@media (max-width:340px){.etf{padding:11px}.etf .dd{font-size:10.5px}.etf .nm{font-size:19px}.pill{font-size:12px}}
+@media (max-width:380px){.hero-t{font-size:36px}.top h1{font-size:26px}.logo{width:58px;height:58px}.fx .v{font-size:46px}.sec h2{font-size:28px}.ind .v{font-size:21px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="ov" id="ov" role="dialog" aria-modal="true"><div class="sheet" id="sheet"></div></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const COL={QQQ:'var(--blue)',QLD:'var(--purple)',TQQQ:'var(--cyan)',CASH:'var(--dim)'};
+const HEX={QQQ:'#4f8dff',QLD:'#8b7cf6',TQQQ:'#22d3ee',CASH:'#5f7592'};
+const usd=(x,d=2)=>'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const sp=(x,d=2)=>(x>=0?'+':'')+(x*100).toFixed(d)+'%';
+const sgn=x=>x>=0?'var(--green)':'var(--red)';
+const BUF=0.005,FEE=0.0005;
+const IC={
+ clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+ spark:'<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 27l8-8 6 5 9-11"/><path d="M26 13h6v6" opacity="0"/><path d="M26 6l1 3 3 1-3 1-1 3-1-3-3-1 3-1z" fill="currentColor"/><path d="M8 8l.7 2 2 .7-2 .7L8 13l-.7-1.6-2-.7 2-.7z" fill="currentColor"/></svg>',
+ pause:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="currentColor" opacity=".18"/><circle cx="12" cy="12" r="6.2" fill="currentColor"/><path d="M10.2 9v6M13.8 9v6" stroke="#04202a" stroke-width="2" stroke-linecap="round"/></svg>',
+ act:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h4l2-6 4 12 2-6h4"/></svg>',
+ chev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+ refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg>',
+ check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+ x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg>',
+ receipt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>',
+ wallet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2-2h11v4"/><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="16.5" cy="13.5" r="1.3" fill="currentColor"/></svg>',
+ gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5l1.3 2.4 2.7-.5.8 2.7 2.6 1-.9 2.6 1.9 2-1.9 2 .9 2.6-2.6 1-.8 2.7-2.7-.5L12 21.5l-1.3-2.4-2.7.5-.8-2.7-2.6-1 .9-2.6-1.9-2 1.9-2-.9-2.6 2.6-1 .8-2.7 2.7.5z"/></svg>',
+ shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l8 3v6c0 5-3.4 8.7-8 10-4.6-1.3-8-5-8-10v-6z" fill="currentColor" opacity=".18"/><path d="M12 2.5l8 3v6c0 5-3.4 8.7-8 10-4.6-1.3-8-5-8-10v-6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>',
+ logo:'<svg viewBox="0 0 40 40" width="40" height="40"><path d="M20 3l14 5v10c0 9-6 15-14 18C12 33 6 27 6 18V8z" fill="#22d3ee"/><text x="20" y="25.5" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="17" fill="#06222c">R</text></svg>'
+};
+function spark(vals,color,{w=300,h=90,fill=true,id='g'}={}){
+  if(!vals||vals.length<2)return '';
+  const mn=Math.min(...vals),mx=Math.max(...vals),pad=6,rng=(mx-mn)||1;
+  const X=i=>pad+i/(vals.length-1)*(w-2*pad),Y=v=>pad+(1-(v-mn)/rng)*(h-2*pad);
+  const d=vals.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join(' ');
+  const lx=X(vals.length-1),ly=Y(vals[vals.length-1]);
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" role="img" aria-label="최근 ${vals.length}거래일 추이"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".28"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>${fill?`<path d="${d} L${lx} ${h} L${X(0)} ${h} Z" fill="url(#${id})"/>`:''}<path d="${d}" fill="none" stroke="${color}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${lx}" cy="${ly}" r="6" fill="${color}"/></svg>`;
+}
+function donut(parts){
+  const R=42,C=2*Math.PI*R;let off=0;
+  const tot=parts.reduce((a,p)=>a+p.v,0)||1;
+  const segs=parts.filter(p=>p.v>0).map(p=>{const len=p.v/tot*C,s=`<circle cx="60" cy="60" r="${R}" fill="none" stroke="${p.c}" stroke-width="15" stroke-dasharray="${Math.max(0,len-(parts.filter(q=>q.v>0).length>1?1.5:0)).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 60 60)"/>`;off+=len;return s}).join('');
+  return `<svg class="donut" viewBox="0 0 120 120" role="img" aria-label="포트폴리오 비중"><circle cx="60" cy="60" r="${R}" fill="none" stroke="#17314a" stroke-width="15"/>${segs}</svg>`;
+}
+
+/* ---------- state ---------- */
+let SIG=null,ACC=null,loadErr='',loading=false;
+const loadAcc=()=>{try{ACC=JSON.parse(store.get('v20.acct')||'null')}catch(e){ACC=null}};
+const kstNow=()=>new Date(Date.now()+9*3600e3).toISOString().slice(0,19).replace('T',' ');
+const kstOf=iso=>iso?new Date(Date.parse(iso)+9*3600e3).toISOString().slice(0,19).replace('T',' '):'-';
+
+/* ---------- account / order plan (manual: fresh transition -> sell non-target, size target) ---------- */
+function holdings(){const o={};for(const a of ['QQQ','QLD','TQQQ'])o[a]={n:Math.max(0,Math.floor(+(ACC&&ACC[a]&&ACC[a].n)||0)),avg:+(ACC&&ACC[a]&&ACC[a].avg)||0};return o}
+function plan(){
+  if(!SIG||!ACC)return null;
+  const px=SIG.closes,tgt=SIG.target_asset,fresh=SIG.guide.fresh,h=holdings(),cash=+ACC.cash||0;
+  const total=cash+['QQQ','QLD','TQQQ'].reduce((s,a)=>s+h[a].n*px[a],0);
+  const orders=[];let proceeds=0,spend=0;
+  for(const a of ['QQQ','QLD','TQQQ'])if(a!==tgt&&h[a].n>0){orders.push({side:'매도',a,q:h[a].n,p:px[a]});proceeds+=h[a].n*px[a]}
+  if(tgt!=='CASH'){
+    if(fresh){const want=Math.floor(total*(1-BUF)/(px[tgt]*(1+FEE))),d=want-h[tgt].n;
+      if(d>0){orders.push({side:'매수',a:tgt,q:d,p:px[tgt]});spend=d*px[tgt]}else if(d<0){orders.push({side:'매도',a:tgt,q:-d,p:px[tgt]});proceeds+=-d*px[tgt]}}
+    else if(SIG.indicators.entry_gate_pass&&cash>0){const q=Math.floor((cash+proceeds)*(1-BUF)/(px[tgt]*(1+FEE)));if(q>0){orders.push({side:'매수',a:tgt,q,p:px[tgt]});spend=q*px[tgt]}}
+  }
+  const left=cash+proceeds-spend-(proceeds+spend)*FEE;
+  const held=['QQQ','QLD','TQQQ'].filter(a=>h[a].n>0).sort((x,y)=>h[y].n*px[y]-h[x].n*px[x])[0]||'CASH';
+  return {orders,total,cash,left,held,h};
+}
+
+/* ---------- render ---------- */
+function statusClass(){const s=SIG.guide.status;return /매도/.test(s)?'sell':/대기|유지|현금/.test(s)?(/대기/.test(s)?'warn':'ok'):''}
+function pillFor(t){return /매수 대기/.test(t)?'wait':/매도/.test(t)?'sell':/보유 유지/.test(t)?'keep':'buy'}
+function render(){
+  const root=$('app');
+  if(!SIG){root.innerHTML=head(null)+`<div class="card"><h2 style="margin:0 0 8px;font-size:22px">신호를 불러오지 못했습니다</h2><p class="txt m">${esc(loadErr||'signal.json이 없습니다.')}<br>GitHub Actions가 한 번 실행된 뒤에 표시됩니다. 오른쪽 위 새로고침을 눌러 다시 시도하세요.</p></div>`+foot();bind();return}
+  const s=SIG,ind=s.indicators,g=s.guide,p=plan(),px=s.closes;
+  const now=Date.now(),valid=now<Date.parse(s.valid_until_utc);
+  const chips=`<div class="chips"><span class="chip ${valid?'ok':'warn'}">${valid?'유효 신호':'신호 갱신 필요'}</span><span class="chip cy">CORE ${ind.core_score}/3</span>${ind.crash?'<span class="chip bad">CRASH</span>':''}</div>`;
+  const banners=(s.integrity.synthetic_data?'<div class="banner r">테스트(합성) 데이터 신호입니다. 매매에 쓰지 마세요.</div>':'')+
+    (!(s.integrity.engine_ok&&s.integrity.config_ok)?'<div class="banner r">엔진·설정 무결성 검사가 일치하지 않습니다. 신호를 신뢰하지 마세요.</div>':'')+
+    (!valid?'<div class="banner w">이 신호의 유효기간이 지났습니다. 새 신호가 올라오면 자동으로 바뀝니다.</div>':'');
+  const clock=`<div class="card clock"><div class="row"><div class="ibox">${IC.clock}</div><div style="min-width:0"><div class="lab">Robust Clock <span class="kst">KST</span></div><div class="big-time num" id="clk">${kstNow()}</div></div></div><hr>
+    <div class="grid2"><div class="tile"><div class="k">데이터 기준일</div><div class="v b num">${s.asof_close} 종가</div></div><div class="tile"><div class="k">다음 실행일</div><div class="v g num">${s.next_exec_date} 시가</div></div>
+    <div class="tile"><div class="k">데이터 생성</div><div class="v p num">${kstOf(s.generated_utc)}</div></div><div class="tile"><div class="k">앱 현재시간</div><div class="v a num" id="clk2">${kstNow()}</div></div></div></div>`;
+  const rows=['QQQ','QLD','TQQQ'].map(a=>`<div class="arow"><span class="n" style="color:${COL[a]}">${a}</span><span class="pill ${pillFor(g.assets[a])}">${esc(g.assets[a])}</span></div>`).join('');
+  const strat=`<div class="card"><div class="eyebrow">${IC.spark}<span>① 오늘의 전략</span></div><div style="margin:14px 0 0 0;color:var(--mut);font-weight:700;font-size:15px">전략 포지션</div>
+    <div class="hero-t ${statusClass()}">${s.target_asset==='CASH'?'':esc(s.target_asset)+' '}${esc(g.status)}</div><hr><div class="expl"><h3>전략 설명</h3>${rows}</div>
+    ${g.note?`<p class="txt m">${esc(g.note)}</p>`:''}<p class="txt m">전략 상태(참고): ${s.prev_asset} → ${s.target_asset} (${s.signal})${s.signal==='HOLD'?'<br>HOLD는 전략 포지션 변화가 없다는 뜻이며, 지속 매매 안내를 중단하지 않습니다.':''}</p>
+    <p class="txt m num" style="margin-top:14px">유효기간 UTC: ${esc(s.valid_until_utc.replace('+00:00','Z'))}</p></div>`;
+  let acc;
+  if(!p){acc=`<div class="card"><div class="eyebrow">${IC.act}<span>② 내 계좌에서 할 일</span></div><div class="title-ic" style="margin-top:14px"><div class="ibox">${IC.pause}</div><h3>계좌 미설정</h3></div><p class="txt m">계좌설정에서 보유수량과 현금을 입력하면 매수·매도 수량을 계산합니다. 입력값은 이 휴대폰에만 저장됩니다.</p><div class="row2"><button class="btn" data-open="settings">계좌 입력하기</button></div></div>`}
+  else{const n=p.orders.length;acc=`<div class="card"><div class="eyebrow">${IC.act}<span>② 내 계좌에서 할 일</span></div><div class="title-ic ${n?(p.orders.some(o=>o.side==='매도')?'sell':''):''}" style="margin-top:14px"><div class="ibox">${n?IC.receipt:IC.pause}</div><div><h3>${n?'주문안 '+n+'건':'입력 잔고 기준 주문안 없음'}</h3><div class="k" style="font-size:14px;margin-top:4px">현재 ${p.held} &nbsp;|&nbsp; 전략 포지션 ${s.target_asset}</div></div></div>
+    ${n?p.orders.map(o=>`<div class="ord"><span class="tag ${o.side==='매수'?'b':'s'}">${o.side}</span><span class="n" style="color:${COL[o.a]}">${o.a}</span><span class="q num">${o.q.toLocaleString()}주<small>${usd(o.p)} · ${usd(o.q*o.p)}</small></span></div>`).join(''):'<p class="txt m">입력 잔고 기준 추가 주문안은 없습니다. 매매 신호가 종료됐다는 뜻은 아닙니다.</p>'}
+    <p class="amber">계좌는 직접 입력한 잔고이며 증권사 실시간 조회가 아닙니다.</p><p class="txt m num" style="margin:0">계좌 최종 입력 UTC: ${esc(ACC.updated||'-')}</p>
+    <div class="trio"><div><div class="k">계좌 평가액</div><div class="v num">${usd(p.total)}</div></div><div><div class="k">현금</div><div class="v num" style="color:var(--mut)">${usd(p.cash)}</div></div><div><div class="k">예상 잔여</div><div class="v num" style="color:var(--amber)">${usd(p.left)}</div></div></div></div>`}
+  const pulse=`<div class="sec"><h2>Market Pulse</h2><span>ROBUST 3 ETF</span></div><div class="pulse">`+['QQQ','QLD','TQQQ'].map(a=>{const m=s.pulse[a];return `<button class="etf" data-etf="${a}"><div class="h"><span class="nm" style="color:${COL[a]}">${a}</span><span class="num" style="color:${sgn(m.chg)};font-weight:700">${sp(m.chg)}</span></div><div class="px num">${usd(m.close)}</div><div class="dd"><span>252일 고점 대비</span><span class="num" style="color:var(--amber);font-weight:700">${sp(m.dd252)}</span></div>${spark(m.series,HEX[a],{id:'sg'+a,h:70})}<div class="hint">탭하여 상세</div></button>`}).join('')+`</div>`;
+  const chk=(ok,t,yes,no)=>`<div class="chk"><span class="c ${ok?'y':'n'}">${ok?IC.check:IC.x}</span><span class="t">${t}</span><span class="r ${ok?'y':'n'}">${ok?yes:no}</span></div>`;
+  const cond=`<div class="card"><div class="ch"><div><h2>ROBUST 전략 조건</h2><div class="s">V20 Production Freeze · 현재 조건</div></div></div>
+    <div class="score3"><div><div class="k">핵심 점수</div><div class="v c num">${ind.core_score} / 3</div></div><div><div class="k">목표 상태</div><div class="v c">${s.target_asset}</div></div><div><div class="k">진입 게이트</div><div class="v" style="color:${ind.entry_gate_pass?'var(--green)':'var(--red)'}">${ind.entry_gate_pass?'OPEN':'CLOSED'}</div></div></div>
+    ${chk(ind.trend_pass,'추세','충족','미충족')}${chk(ind.mom_pass,'모멘텀','충족','미충족')}${chk(ind.vol_pass,'변동성','충족','미충족')}${chk(!ind.crash,'급락 방어 정상','충족','발동')}${chk(ind.fast_reentry_ready,'Fast Re-entry','충족','대기')}</div>`;
+  const C=(v,f)=>`<div><div class="k">${f[0]}</div><div class="v num" style="color:${f[2]}">${f[1](v)}</div></div>`;
+  const indc=`<div class="card"><div class="ch"><div><h2 style="font-size:27px">Strategy Indicators</h2><div class="s">V20 판단에 사용되는 핵심 시장지표</div></div></div><div class="ind">
+    ${C(ind.rsi14,['RSI14',v=>v.toFixed(1),'var(--cyan)'])}${C(ind.mfi14,['MFI14',v=>v.toFixed(1),'var(--purple)'])}${C(ind.atr_pct14,['ATR14',v=>sp(v),'var(--amber)'])}
+    ${C(ind.roc5,['ROC5',v=>sp(v),sgn(ind.roc5)])}${C(ind.roc120,['ROC120',v=>sp(v),sgn(ind.roc120)])}${C(ind.vol40,['VOL40',v=>sp(v),'var(--tx)'])}
+    ${C(px.QQQ,['QQQ',v=>usd(v),'var(--tx)'])}${C(ind.sma180,['SMA180',v=>usd(v),'var(--blue)'])}${C(ind.dd252,['252D DD',v=>sp(v),'var(--amber)'])}</div></div>`;
+  let port;
+  if(!p){port=`<div class="card tap" data-open="settings"><div class="ch"><div><h2>내 포트폴리오</h2><div class="s">계좌정보는 이 휴대폰에만 저장</div></div>${IC.chev.replace('<svg','<svg class="chev"')}</div><p class="txt m">보유수량을 입력하면 비중과 평가손익이 표시됩니다.</p></div>`}
+  else{const h=p.h,val=a=>h[a].n*px[a];const cost=['QQQ','QLD','TQQQ'].reduce((x,a)=>x+(h[a].avg>0?h[a].n*h[a].avg:0),0),mv=['QQQ','QLD','TQQQ'].reduce((x,a)=>x+(h[a].avg>0?val(a):0),0),pnl=mv-cost;
+    port=`<div class="card tap" data-open="portfolio"><div class="ch"><div><h2>내 포트폴리오</h2><div class="s">계좌정보는 이 휴대폰에만 저장</div></div>${IC.chev.replace('<svg','<svg class="chev"')}</div>
+    <div class="port"><div style="position:relative">${donut([...['QQQ','QLD','TQQQ'].map(a=>({v:val(a),c:HEX[a]})),{v:p.cash,c:HEX.CASH}])}<div style="position:absolute;inset:0;display:grid;place-items:center;text-align:center"><div><div class="k" style="font-size:11px;letter-spacing:.14em">PORTFOLIO</div><div class="num" style="font-weight:900;font-size:13px">${usd(p.total)}</div></div></div></div>
+    <div class="pv"><div class="k">총 평가액</div><div class="v num">${usd(p.total)}</div><div class="k">평가손익</div><div class="v num" style="color:${cost>0?sgn(pnl):'var(--mut)'}">${cost>0?usd(pnl):'평단 미입력'}</div><div class="k">현금</div><div class="v num" style="color:var(--mut)">${usd(p.cash)}</div></div></div>
+    ${['QQQ','QLD','TQQQ'].filter(a=>h[a].n>0).map(a=>`<div class="hold"><span class="dot" style="background:${HEX[a]}"></span><span class="n">${a}</span><span class="q num">${h[a].n.toLocaleString()}주</span><span class="p num" style="color:${h[a].avg>0?sgn(px[a]/h[a].avg-1):'var(--mut)'}">${h[a].avg>0?sp(px[a]/h[a].avg-1):'-'}</span></div>`).join('')}</div>`}
+  const fx=s.fx?`<div class="card tap fx" data-etf="FX"><div class="ch"><div><h2>USD / KRW</h2><div class="s">달러 자산의 원화 가치</div></div>${IC.chev.replace('<svg','<svg class="chev"')}</div><div style="margin:14px 0"><span class="v num">₩${Math.round(s.fx.usdkrw).toLocaleString()}</span><span class="d num" style="color:${s.fx.chg>=0?'var(--red)':'var(--cyan)'}">${sp(s.fx.chg)}</span></div>${spark(s.fx.series,'#ffb547',{id:'sgfx',h:90})}</div>`:'';
+  const btns=`<div class="btns"><button class="bt o" data-open="order">${IC.receipt}주문</button><button class="bt p" data-open="portfolio">${IC.wallet}포트폴리오</button><button class="bt s" data-open="settings">${IC.gear}계좌설정</button></div>`;
+  root.innerHTML=head(chips)+banners+clock+strat+acc+pulse+cond+indc+port+fx+btns+foot();
+  bind();
+}
+const head=chips=>`<div class="top"><div class="logo">${IC.logo}</div><div class="grow"><h1>ROBUST V20</h1><div class="sub">Production Freeze 1.0 · Read Only Strategy</div></div><button class="iconbtn ${loading?'spin':''}" id="rf" aria-label="새로고침">${IC.refresh}</button></div>${chips||''}`;
+const foot=()=>`<div class="foot">${IC.shield}<div class="a">ROBUST V20 · Frozen Engine · Read-only Dashboard</div><div class="b">실제 주문 전 다음 시가·수수료·계좌상태를 반드시 확인하세요.<br>이 앱은 신호와 주문계획만 계산하며 자동 주문을 하지 않습니다.</div><a href="backtest.html">백테스트 성과 보기</a></div>`;
+function bind(){
+  const r=$('rf');if(r)r.onclick=()=>load(true);
+  document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openSheet(b.dataset.open));
+  document.querySelectorAll('[data-etf]').forEach(b=>b.onclick=()=>openSheet('etf:'+b.dataset.etf));
+}
+setInterval(()=>{const a=$('clk'),b=$('clk2');if(a){const t=kstNow();a.textContent=t;b.textContent=t}},1000);
+
+/* ---------- sheets ---------- */
+function openSheet(kind){
+  const sh=$('sheet');let h='<button class="iconbtn x" id="sx" aria-label="닫기">'+IC.x+'</button>';
+  if(kind==='settings'){
+    const a=ACC||{cash:0},g=(k,f)=>a[k]&&a[k][f]!=null?a[k][f]:'';
+    h+=`<h2>계좌설정</h2><p class="txt m">증권사에서 확인한 실제 잔고를 직접 입력하세요. 이 휴대폰 안에만 저장되고 어디로도 전송되지 않습니다.</p>
+    <div class="field"><div><label for="f_cash">현금 (USD)</label><input type="number" id="f_cash" inputmode="decimal" min="0" step="0.01" value="${a.cash||''}"></div><div></div></div>`+
+    ['QQQ','QLD','TQQQ'].map(k=>`<div class="field"><div><label for="f_${k}n">${k} 보유(주)</label><input type="number" id="f_${k}n" inputmode="numeric" min="0" step="1" value="${g(k,'n')}"></div><div><label for="f_${k}a">${k} 평단(USD)</label><input type="number" id="f_${k}a" inputmode="decimal" min="0" step="0.01" value="${g(k,'avg')}"></div></div>`).join('')+
+    `<div class="row2"><button class="btn g" id="f_reset">초기화</button><button class="btn" id="f_save">저장</button></div>`;
+  }else if(kind==='order'){
+    const p=plan();h+=`<h2>주문</h2>`;
+    if(!SIG)h+='<p class="txt m">신호가 없습니다.</p>';
+    else if(!p)h+='<p class="txt m">계좌설정에서 잔고를 먼저 입력하세요.</p><div class="row2"><button class="btn" data-open2="settings">계좌 입력하기</button></div>';
+    else{const px=SIG.closes;h+=`<p class="txt m">신호 ${SIG.signal} · ${SIG.asof_close} 종가 기준 → ${SIG.next_exec_date} 시가 실행</p>`+
+      (p.orders.length?p.orders.map(o=>`<div class="ord"><span class="tag ${o.side==='매수'?'b':'s'}">${o.side}</span><span class="n" style="color:${COL[o.a]}">${o.a}</span><span class="q num">${o.q.toLocaleString()}주<small>${usd(o.p)} · ${usd(o.q*o.p)}</small></span></div>`).join(''):'<p class="txt">입력 잔고 기준 주문안 없음</p>')+
+      `<table class="t num"><tr><td>총 평가액</td><td>${usd(p.total)}</td></tr><tr><td>현금</td><td>${usd(p.cash)}</td></tr><tr><td>예상 잔여</td><td>${usd(p.left)}</td></tr></table>
+      <p class="txt m">목표주수 = floor[ 총평가액 × (1 − 0.5%) ÷ {종가 × (1 + 0.05%)} ]. 새 전략 전환이 있을 때만 목표 수량을 맞추고, HOLD일에는 비목표 자산 매도 안내만 유지합니다. 실제 시가가 크게 움직이면 수량을 다시 계산하세요.</p>`}
+  }else if(kind==='portfolio'){
+    const p=plan();h+=`<h2>포트폴리오</h2>`;
+    if(!p)h+='<p class="txt m">계좌설정에서 잔고를 먼저 입력하세요.</p>';
+    else{const px=SIG.closes;h+=`<table class="t num"><tr><th>종목</th><th>수량</th><th>평단</th><th>현재가</th><th>평가금액</th><th>손익</th></tr>`+
+      ['QQQ','QLD','TQQQ'].map(a=>{const x=p.h[a],v=x.n*px[a];return `<tr><td style="color:${COL[a]};font-weight:900">${a}</td><td>${x.n.toLocaleString()}</td><td>${x.avg>0?usd(x.avg):'-'}</td><td>${usd(px[a])}</td><td>${usd(v)}</td><td style="color:${x.avg>0?sgn(px[a]/x.avg-1):'var(--mut)'}">${x.avg>0&&x.n>0?sp(px[a]/x.avg-1):'-'}</td></tr>`}).join('')+
+      `<tr><td>현금</td><td></td><td></td><td></td><td>${usd(p.cash)}</td><td></td></tr><tr><td style="font-weight:900">합계</td><td></td><td></td><td></td><td style="font-weight:900">${usd(p.total)}</td><td></td></tr></table><div class="row2"><button class="btn g" data-open2="settings">잔고 수정</button></div>`}
+  }else if(kind.startsWith('etf:')){
+    const a=kind.slice(4);
+    if(a==='FX'&&SIG.fx){h+=`<h2>USD / KRW</h2><p class="txt m num">₩${SIG.fx.usdkrw.toFixed(2)} · 전일 대비 ${sp(SIG.fx.chg)} · 최근 ${SIG.fx.series.length}거래일</p>`+spark(SIG.fx.series,'#ffb547',{id:'sgfx2',w:320,h:150})}
+    else if(SIG.pulse[a]){const m=SIG.pulse[a],mn=Math.min(...m.series),mx=Math.max(...m.series);h+=`<h2 style="color:${COL[a]}">${a}</h2><p class="txt m num">${usd(m.close)} · 전일 대비 ${sp(m.chg)} · 252일 고점 대비 ${sp(m.dd252)}</p>`+spark(m.series,HEX[a],{id:'sgd'+a,w:320,h:150})+`<table class="t num"><tr><td>최근 ${m.series.length}거래일 최고</td><td>${usd(mx)}</td></tr><tr><td>최근 ${m.series.length}거래일 최저</td><td>${usd(mn)}</td></tr></table>`}
+  }
+  sh.innerHTML=h;$('ov').classList.add('on');
+  $('sx').onclick=closeSheet;
+  sh.querySelectorAll('[data-open2]').forEach(b=>b.onclick=()=>openSheet(b.dataset.open2));
+  if(kind==='settings'){
+    $('f_save').onclick=()=>{const n=id=>{const v=parseFloat($(id).value);return isFinite(v)&&v>=0?v:0};
+      const o={cash:n('f_cash'),updated:new Date().toISOString(),};for(const k of ['QQQ','QLD','TQQQ'])o[k]={n:Math.floor(n('f_'+k+'n')),avg:n('f_'+k+'a')};
+      store.set('v20.acct',JSON.stringify(o));loadAcc();closeSheet();render()};
+    $('f_reset').onclick=()=>{store.del('v20.acct');ACC=null;closeSheet();render()};
+  }
+}
+function closeSheet(){$('ov').classList.remove('on')}
+$('ov').addEventListener('click',e=>{if(e.target.id==='ov')closeSheet()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
+
+/* ---------- data ---------- */
+function valid(o){return o&&o.indicators&&o.closes&&o.guide&&o.pulse&&o.target_asset&&o.valid_until_utc}
+async function load(manual){
+  loading=true;if(manual)render();
+  try{
+    if(location.protocol==='file:')throw new Error('파일로 직접 열면 signal.json을 읽을 수 없습니다. 웹 주소로 여세요.');
+    const r=await fetch('signal.json?'+Date.now(),{cache:'no-store'});
+    if(!r.ok)throw new Error('signal.json을 찾지 못했습니다 ('+r.status+')');
+    const o=await r.json();if(!valid(o))throw new Error('signal.json 형식이 올바르지 않습니다. daily_signal.py 최신 버전으로 다시 생성하세요.');
+    SIG=o;loadErr='';store.set('v20.sigcache',JSON.stringify(o));
+  }catch(e){
+    loadErr=e.message;
+    if(!SIG){try{const c=JSON.parse(store.get('v20.sigcache')||'null');if(valid(c)){SIG=c;loadErr='오프라인: 마지막으로 받은 신호를 보여줍니다.'}}catch(x){}}
+  }
+  loading=false;render();
+}
+loadAcc();render();load(false);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(false)});
+if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>

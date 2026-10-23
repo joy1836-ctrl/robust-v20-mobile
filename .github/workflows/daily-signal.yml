@@ -1,0 +1,42 @@
+name: daily-signal
+on:
+  schedule:
+    - cron: "30 21 * * 1-5"   # 평일 21:30 UTC = 한국 06:30 (미국장 마감 후, 서머타임·표준시 모두 해당)
+  workflow_dispatch: {}        # 수동 실행 버튼
+permissions:
+  contents: write
+concurrency:
+  group: daily-signal
+  cancel-in-progress: false
+jobs:
+  signal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Generate signal (3 retries)
+        run: |
+          for i in 1 2 3; do
+            python daily_signal.py --out docs/signal.json && exit 0
+            echo "retry $i"; sleep 60
+          done
+          exit 1
+      - name: Commit signal
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/signal.json
+          git diff --cached --quiet || git commit -m "signal $(date -u +%F)"
+          git pull --rebase origin "${GITHUB_REF_NAME}" || true
+          git push
+      - name: Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ACCOUNT_JSON: ${{ secrets.ACCOUNT_JSON }}
+          APP_URL: ${{ vars.APP_URL }}
+        run: python send_telegram.py

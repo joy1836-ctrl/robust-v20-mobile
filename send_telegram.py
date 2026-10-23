@@ -12,7 +12,7 @@ Optional:
   python send_telegram.py --dry-run     # print the message, send nothing
 """
 from __future__ import annotations
-import argparse, html, json, math, os, sys, urllib.parse, urllib.request
+import argparse, html, json, math, os, sys, urllib.error, urllib.parse, urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -86,8 +86,16 @@ def build_message(sig, acct=None, app_url=""):
 def send(token, chat, text):
     req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage",
         data=urllib.parse.urlencode({"chat_id": chat, "text": text, "parse_mode": "HTML", "disable_web_page_preview": "true"}).encode())
-    with urllib.request.urlopen(req, timeout=30) as r:
-        body = json.loads(r.read().decode())
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            body = json.loads(r.read().decode())
+    except urllib.error.HTTPError as ex:   # show Telegram's reason (never prints the token)
+        reason = ex.read().decode("utf-8", "replace")
+        hints = {401: "토큰이 틀렸거나 폐기됨 (TELEGRAM_BOT_TOKEN 확인)",
+                 400: "chat id가 틀렸거나 봇과 대화 시작 전 (TELEGRAM_CHAT_ID 확인, 봇에게 먼저 메시지 보내기)",
+                 403: "봇이 차단됐거나 대화 시작 전", 404: "토큰 형식 오류 (TELEGRAM_BOT_TOKEN 확인)"}
+        print(f"[telegram] HTTP {ex.code}: {reason}\n[힌트] {hints.get(ex.code, '')}", file=sys.stderr)
+        raise SystemExit(1)
     if not body.get("ok"):
         raise RuntimeError(body)
 

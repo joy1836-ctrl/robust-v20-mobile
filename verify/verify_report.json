@@ -1,0 +1,28 @@
+{
+  "integrity": {
+    "engine_ok": true,
+    "config_ok": true
+  },
+  "engine_data_range": [
+    "2010-02-11",
+    "2026-10-23"
+  ],
+  "excel_range": [
+    "2011-08-23",
+    "2026-09-04"
+  ],
+  "excel_rows": 3781,
+  "rows_compared": 3781,
+  "rows_missing_in_data": 0,
+  "alignment_offset": -1,
+  "state_mismatch_days": 0,
+  "state_match_rate": 1.0,
+  "first_mismatches": [],
+  "excel_transitions": 87,
+  "engine_transitions": 87,
+  "transition_lists_identical": true,
+  "cagr_engine": 0.5693,
+  "cagr_excel": 0.5702,
+  "mdd_engine": -0.4754,
+  "mdd_excel": -0.4754
+}

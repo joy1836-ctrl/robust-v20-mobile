@@ -215,6 +215,11 @@ def main():
     data = E.load_data(a.data_dir, a.period, a.self_test)
     if not (a.self_test or a.data_dir or a.no_stale_check):
         last, need = data["QQQ"].index[-1].date(), expected_last_session()
+        if last > need:   # 장중에 실행하면 오늘의 미완성 봉이 끝에 붙는다 -> 버리고 마지막 마감일 기준으로 계산
+            cut = pd.Timestamp(need)
+            print(f"[장중] 미완성 봉({last}) 제외, 마지막 마감일 {need} 기준으로 계산합니다.", file=sys.stderr)
+            data = {k: df[df.index <= cut] for k, df in data.items()}
+            last = data["QQQ"].index[-1].date()
         if last < need:
             print(f"[STALE] 시세가 오래됨: 필요한 마감일 {need}, 받은 마지막 날짜 {last}. 오래된 데이터로 신호를 만들지 않습니다.", file=sys.stderr)
             sys.exit(3)

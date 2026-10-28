@@ -95,6 +95,9 @@ def send(token, chat, text):
                  400: "chat id가 틀렸거나 봇과 대화 시작 전 (TELEGRAM_CHAT_ID 확인, 봇에게 먼저 메시지 보내기)",
                  403: "봇이 차단됐거나 대화 시작 전", 404: "토큰 형식 오류 (TELEGRAM_BOT_TOKEN 확인)"}
         print(f"[telegram] HTTP {ex.code}: {reason}\n[힌트] {hints.get(ex.code, '')}", file=sys.stderr)
+        import re
+        shape = "정상 형태" if re.fullmatch(r"\d{6,12}:[A-Za-z0-9_-]{30,}", token) else "형태 이상(숫자:영문 형식이 아님)"
+        print(f"[진단] 토큰 길이={len(token)}자, 콜론 개수={token.count(':')}, 형태={shape}, chat_id 자릿수={len(str(chat))}", file=sys.stderr)
         raise SystemExit(1)
     if not body.get("ok"):
         raise RuntimeError(body)

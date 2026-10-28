@@ -64,6 +64,19 @@ def next_trading_day(d: date) -> date:
     return d
 
 
+def expected_last_session(now_utc=None, buffer_min=30):
+    """가장 최근에 '마감이 끝난' NYSE 거래일 (16:00 ET + buffer 이후). 시세가 이보다 오래되면 지연 데이터다."""
+    now = (now_utc or datetime.now(timezone.utc)).astimezone(NY)
+    d = now.date()
+    def is_td(x): return x.weekday() < 5 and x not in nyse_holidays(x.year)
+    closed = datetime(d.year, d.month, d.day, 16, 0, tzinfo=NY) + timedelta(minutes=buffer_min)
+    if not (is_td(d) and now >= closed):
+        d -= timedelta(days=1)
+        while not is_td(d):
+            d -= timedelta(days=1)
+    return d
+
+
 # ---------------- integrity / engine ----------------
 def sha256_file(p: Path) -> str:
     return hashlib.sha256(p.read_bytes()).hexdigest()
@@ -196,9 +209,15 @@ def main():
     ap.add_argument("--config", default=str(HERE / "v20_frozen_config.json"))
     ap.add_argument("--out", default="signal.json")
     ap.add_argument("--cost-bps", type=float, default=5.0)
+    ap.add_argument("--no-stale-check", action="store_true", help="시세 신선도 검사 생략 (테스트용)")
     a = ap.parse_args()
     cfg, meta, integ = load_frozen(Path(a.config))
     data = E.load_data(a.data_dir, a.period, a.self_test)
+    if not (a.self_test or a.data_dir or a.no_stale_check):
+        last, need = data["QQQ"].index[-1].date(), expected_last_session()
+        if last < need:
+            print(f"[STALE] 시세가 오래됨: 필요한 마감일 {need}, 받은 마지막 날짜 {last}. 오래된 데이터로 신호를 만들지 않습니다.", file=sys.stderr)
+            sys.exit(3)
     sig = build_signal(data, cfg, meta, integ, a.cost_bps, synthetic=a.self_test,
                        fx=None if (a.self_test or a.data_dir) else fetch_fx())
     Path(a.out).write_text(json.dumps(sig, ensure_ascii=False, indent=2), encoding="utf-8")

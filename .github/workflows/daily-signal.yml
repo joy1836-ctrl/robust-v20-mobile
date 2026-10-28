@@ -18,11 +18,11 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Generate signal (3 retries)
+      - name: Generate signal (fresh data required, up to 6 tries)
         run: |
-          for i in 1 2 3; do
+          for i in 1 2 3 4 5 6; do
             python daily_signal.py --out docs/signal.json && exit 0
-            echo "retry $i"; sleep 60
+            echo "retry $i (wait 5 min for fresh market data)"; sleep 300
           done
           exit 1
       - name: Commit signal
@@ -40,3 +40,10 @@ jobs:
           ACCOUNT_JSON: ${{ secrets.ACCOUNT_JSON }}
           APP_URL: ${{ vars.APP_URL }}
         run: python send_telegram.py
+      - name: Notice when signal could not be made
+        if: failure()
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python send_telegram.py --notice "[V20 모바일] 오늘 신호를 만들지 못했습니다. 시세가 늦게 갱신됐거나 오류입니다. 오래된 데이터로 만든 신호는 보내지 않습니다. 잠시 뒤 GitHub Actions에서 다시 실행하세요."

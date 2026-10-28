@@ -107,7 +107,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--signal", default="docs/signal.json")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--notice", help="신호 대신 이 안내문을 보낸다 (데이터 지연 등)")
     a = ap.parse_args()
+    if a.notice:
+        token, chat = (os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip(), (os.environ.get("TELEGRAM_CHAT_ID") or "").strip()
+        if a.dry_run or not token or not chat:
+            print(a.notice); return 0
+        send(token[3:] if token.lower().startswith("bot") else token, chat, html.escape(a.notice)); print("sent notice"); return 0
     sig = json.loads(Path(a.signal).read_text(encoding="utf-8"))
     acct = None
     if os.environ.get("ACCOUNT_JSON"):

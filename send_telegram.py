@@ -83,7 +83,24 @@ def build_message(sig, acct=None, app_url=""):
     return "\n".join(L)
 
 
-def send(token, chat, text):
+def send(token, chat, text, tries=4):
+    """일시적 서버 오류(5xx)·네트워크 오류는 잠시 뒤 다시 시도한다. 4xx(토큰/chat id 오류)는 즉시 실패."""
+    import time
+    for k in range(1, tries + 1):
+        try:
+            return _send_once(token, chat, text)
+        except urllib.error.HTTPError as ex:
+            if ex.code < 500 or k == tries:
+                raise
+            print(f"[telegram] HTTP {ex.code}, {k}/{tries} 재시도 대기", file=sys.stderr)
+        except urllib.error.URLError as ex:
+            if k == tries:
+                raise
+            print(f"[telegram] 네트워크 오류 {ex.reason}, {k}/{tries} 재시도 대기", file=sys.stderr)
+        time.sleep(15 * k)
+
+
+def _send_once(token, chat, text):
     req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage",
         data=urllib.parse.urlencode({"chat_id": chat, "text": text, "parse_mode": "HTML", "disable_web_page_preview": "true"}).encode())
     try:
@@ -91,6 +108,8 @@ def send(token, chat, text):
             body = json.loads(r.read().decode())
     except urllib.error.HTTPError as ex:   # show Telegram's reason (never prints the token)
         reason = ex.read().decode("utf-8", "replace")
+        if ex.code >= 500:
+            raise
         hints = {401: "토큰이 틀렸거나 폐기됨 (TELEGRAM_BOT_TOKEN 확인)",
                  400: "chat id가 틀렸거나 봇과 대화 시작 전 (TELEGRAM_CHAT_ID 확인, 봇에게 먼저 메시지 보내기)",
                  403: "봇이 차단됐거나 대화 시작 전", 404: "토큰 형식 오류 (TELEGRAM_BOT_TOKEN 확인)"}

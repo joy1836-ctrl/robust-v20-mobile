@@ -297,7 +297,7 @@ const ASSETS=['QQQ','QLD','TQQQ'];
 
 /* FIFO: realized P&L per sale (USD, and KRW when both buy and sell have an FX rate) */
 function fifo(){
-  const lots={QQQ:[],QLD:[],TQQQ:[]},realized=[];let short=0;
+  const lots={QQQ:[],QLD:[],TQQQ:[]},realized=[],shortA={};let short=0;
   const list=TR.map((t,i)=>({...t,_i:i})).filter(t=>lots[t.a]&&(t.side==='매수'||t.side==='매도'))
     .sort((x,y)=>x.date<y.date?-1:x.date>y.date?1:(x.side===y.side?x._i-y._i:(x.side==='매수'?-1:1)));
   for(const t of list){
@@ -311,10 +311,10 @@ function fifo(){
       L.rem-=m;need-=m;if(L.rem<=1e-9)lots[t.a].shift();
     }
     pnl-=fee;if(fx)krw-=fee*fx;
-    if(need>1e-9)short+=need;
+    if(need>1e-9){short+=need;shortA[t.a]=(shortA[t.a]||0)+need}
     realized.push({id:t.id,date:t.date,a:t.a,pnl,krw:krwOk?krw:null,short:need>1e-9?need:0});
   }
-  return {lots,realized,short};
+  return {lots,realized,short,shortA};
 }
 
 /* this-year summary: account-equity return (modified Dietz) + FIFO realized gains */
@@ -334,7 +334,7 @@ function journal(){
   const tax=Math.max(0,krw-2500000)*0.22;
   let unreal=null;
   if(SIG&&SIG.closes){unreal=0;for(const a of ASSETS)for(const L of f.lots[a])unreal+=L.rem*((SIG.closes[a]||0)-L.p)}
-  return {Y,start,end,net,base,gain,ret,yrReal:sum(yr,'pnl'),yrN:yr.length,krw,krwMiss,tax,cumReal:sum(f.realized,'pnl'),unreal,short:f.short,per:Object.fromEntries(f.realized.map(r=>[r.id,r])),n:TR.length};
+  return {Y,start,end,net,base,gain,ret,yrReal:sum(yr,'pnl'),yrN:yr.length,krw,krwMiss,tax,cumReal:sum(f.realized,'pnl'),unreal,short:f.short,shortA:f.shortA,per:Object.fromEntries(f.realized.map(r=>[r.id,r])),n:TR.length};
 }
 function ytdCard(){
   const J=journal(),has=J.ret!=null;
@@ -380,7 +380,7 @@ function importText(txt){
 function openTrades(st){
   st=st||{};const sh=$('sheet'),J=journal();
   const ed=st.edit?TR.find(t=>t.id===st.edit):null;
-  const d=ed||{date:(SIG&&SIG.next_exec_date)||kstNow().slice(0,10),side:'매도',a:'TQQQ',q:'',p:'',fx:'',fee:''};
+  const d=ed||st.draft||{date:(SIG&&SIG.next_exec_date)||kstNow().slice(0,10),side:'매도',a:'TQQQ',q:'',p:'',fx:'',fee:''};
   const fxHint=SIG&&SIG.fx?Math.round(SIG.fx.usdkrw):'';
   const opt=(arr,v)=>arr.map(x=>`<option${x===v?' selected':''}>${x}</option>`).join('');
   const p=plan(),pend=p&&SIG?p.orders:[];
@@ -394,10 +394,10 @@ function openTrades(st){
     ${kv('올해 실현이익 (원화)',J.yrN&&J.krwMiss<J.yrN?won(J.krw):'환율 입력 필요',J.yrN&&J.krwMiss<J.yrN?sgn(J.krw):'var(--amber)')}
     ${J.yrN&&J.krwMiss<J.yrN?kv('예상 양도세 (참고)',won(J.tax)+(J.krwMiss?` · 환율 미입력 ${J.krwMiss}건 제외`:'')):''}
     ${kv('평가손익 (기록된 매수분)',J.unreal!=null&&!J.short?usdS(J.unreal):'-')}${kv('누적 실현손익 (USD)',J.n?usdS(J.cumReal):'-',J.n?sgn(J.cumReal):'')}
-    ${J.short?`<p class="amber">매도 수량이 기록된 매수보다 ${+J.short.toFixed(4)}주 많습니다. 이전부터 보유하던 주식은 날짜·평단으로 먼저 "매수"를 등록해야 실현손익이 맞습니다.</p>`:''}
+    ${J.short?`<p class="amber">매도 수량이 기록된 매수보다 ${+J.short.toFixed(4)}주 많습니다. 이전부터 보유하던 주식은 날짜·평단으로 먼저 "매수"를 등록해야 실현손익이 맞습니다. (올해 수익률에는 영향 없음)</p><div class="row2">${Object.keys(J.shortA).map(a=>`<button class="btn g" data-fill="${a}">기존 보유분 등록 · ${a} ${+J.shortA[a].toFixed(4)}주</button>`).join('')}</div>`:''}
     <p class="txt m">수익률 = (현재 평가액 − 연초 평가액 − 순입금) ÷ (연초 평가액 + 가중 입금). 현재 평가액은 계좌설정에 입력한 잔고 기준이라, 매매 후 잔고도 갱신해야 정확합니다. 양도세는 실제로는 결제일(체결 다음 영업일) 기준·손실 이월 미반영으로 계산한 참고값입니다.</p>
     <div class="field"><div><label for="t_start">${J.Y} 연초 평가액 (USD)</label><input type="number" id="t_start" inputmode="decimal" min="0" step="0.01" value="${J.start||''}" placeholder="1월 1일 계좌 평가액"></div><div style="display:flex;align-items:flex-end"><button class="btn g" id="t_startsave" style="width:100%">저장</button></div></div>`;
-  const formH=`<h3 class="sh">${ed?'거래 수정':'거래 추가'}</h3>
+  const formH=`<h3 class="sh">${ed?'거래 수정':st.draft?'기존 보유분 등록 (매수 기록)':'거래 추가'}</h3>${st.draft?'<p class="txt m">이전부터 보유하던 주식을 산 기록입니다. 증권사 앱에서 <b>매수일, 평균매입가</b>를 확인해 넣으세요. 여러 번에 나눠 샀다면 나눈 대로 각각 등록하면 더 정확합니다. 환율은 그날의 원/달러 환율(선택)입니다.</p>':''}
     <div class="field"><div><label for="t_date">체결일 (미국장 기준)</label><input type="date" id="t_date" value="${esc(d.date)}"></div><div><label for="t_side">구분</label><select id="t_side">${opt(['매수','매도','입금','출금'],d.side)}</select></div></div>
     <div class="field" id="t_arow"><div><label for="t_a">종목</label><select id="t_a">${opt(ASSETS,d.a)}</select></div><div><label for="t_q">수량 (주)</label><input type="number" id="t_q" inputmode="decimal" min="0" step="any" value="${isFlow(d)?'':esc(d.q)}"></div></div>
     <div class="field"><div><label for="t_p" id="t_plab">체결가 (USD)</label><input type="number" id="t_p" inputmode="decimal" min="0" step="any" value="${esc(d.p)}"></div><div id="t_fxbox"><label for="t_fx">환율 (원/달러, 선택)</label><input type="number" id="t_fx" inputmode="decimal" min="0" step="any" value="${d.fx||''}" placeholder="${fxHint}"></div></div>
@@ -429,6 +429,7 @@ function openTrades(st){
     let armed=false;$('t_del').onclick=function(){if(!armed){armed=true;this.textContent='한 번 더 눌러 삭제';return}TR=TR.filter(t=>t.id!==ed.id);saveTr();openTrades({msg:'삭제했습니다.'});render()};
     $('t_cancel').onclick=()=>openTrades();
   }
+  sh.querySelectorAll('[data-fill]').forEach(b=>b.onclick=()=>{const a=b.dataset.fill,av=ACC&&ACC[a]&&+ACC[a].avg>0?+ACC[a].avg:'';openTrades({draft:{date:'',side:'매수',a,q:+J.shortA[a].toFixed(4),p:av,fx:'',fee:''}});sh.scrollTop=sh.scrollHeight;setTimeout(()=>{const e=$('t_date');if(e)e.scrollIntoView({block:'center'})},50)});
   const fp=$('t_fromplan');
   if(fp)fp.onclick=()=>{let n=0;const have=new Set(TR.map(t=>[t.date,t.side,t.a,+t.q].join('|')));
     for(const o of pend){const rec={id:uid(),date:SIG.next_exec_date,side:o.side,a:o.a,q:o.q,p:o.p,fx:0,fee:0,est:true};if(have.has([rec.date,rec.side,rec.a,rec.q].join('|')))continue;TR.push(rec);n++}

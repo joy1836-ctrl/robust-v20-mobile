@@ -115,10 +115,10 @@ svg.spark{display:block;width:100%;height:auto;overflow:visible}
 .hold .n{font-size:21px;font-weight:900;flex:1}.hold .q{color:var(--mut);font-size:19px}.hold .p{font-size:19px;font-weight:700;min-width:70px;text-align:right}
 .fx .v{font-size:clamp(40px,12vw,52px);font-weight:900;color:var(--amber);letter-spacing:-.02em;line-height:1.1}
 .fx .d{font-size:21px;font-weight:700;margin-left:12px}
-.btns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.btns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .bt{border-radius:26px;padding:22px 8px 18px;border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:12px;font-weight:900;font-size:17px;color:var(--tx)}
 .bt svg{width:38px;height:38px}
-.bt.o{background:#1a1626}.bt.o svg{color:var(--red)}.bt.p{background:#0a2430}.bt.p svg{color:var(--cyan)}.bt.s{background:#14193a}.bt.s svg{color:var(--purple)}
+.bt.o{background:#1a1626}.bt.o svg{color:var(--red)}.bt.p{background:#0a2430}.bt.p svg{color:var(--cyan)}.bt.s{background:#14193a}.bt.s svg{color:var(--purple)}.bt.j{background:#0f2a1f}.bt.j svg{color:var(--green)}
 .foot{text-align:center;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:6px}
 .foot svg{width:54px;height:54px;color:var(--green)}
 .foot .a{font-size:17px;letter-spacing:.02em}.foot .b{font-size:13px;color:var(--dim)}
@@ -135,10 +135,16 @@ svg.spark{display:block;width:100%;height:auto;overflow:visible}
 .sheet .x{float:right}
 .field{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
 .field label{font-size:13px;color:var(--mut);display:block;margin-bottom:4px}
-input[type=number]{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:14px;color:var(--tx);font:inherit;font-size:17px;padding:12px 14px;min-width:0}
+input[type=number],input[type=date],input[type=text],select{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:14px;color:var(--tx);font:inherit;font-size:17px;padding:12px 14px;min-width:0}
 .btn{border:0;border-radius:16px;padding:14px 20px;font-weight:900;font-size:16px;background:var(--cyan);color:#04202a}
 .btn.g{background:rgba(255,255,255,.08);color:var(--tx)}
 .row2{display:flex;gap:10px;margin-top:14px}.row2 .btn{flex:1}
+select{appearance:none;-webkit-appearance:none}
+.bigret{font-size:clamp(34px,11vw,46px);font-weight:900;line-height:1.1;margin:12px 0 4px}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14.5px}.kv span:first-child{color:var(--mut)}.kv span:last-child{font-weight:700;text-align:right}
+.est{margin-left:6px;padding:2px 8px;border-radius:99px;background:rgba(255,181,71,.14);color:var(--amber);font-size:11px;font-weight:700;vertical-align:middle}
+.btn.d{background:rgba(255,92,122,.16);color:var(--red)}
+.sheet h3.sh{margin:20px 0 4px;font-size:17px;font-weight:900}
 .ord{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
 .ord .tag{padding:7px 14px;border-radius:99px;font-weight:900;font-size:14px}
 .tag.s{background:rgba(255,92,122,.14);color:var(--red)}.tag.b{background:rgba(46,230,160,.14);color:var(--green)}
@@ -177,6 +183,7 @@ const IC={
  wallet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2-2h11v4"/><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="16.5" cy="13.5" r="1.3" fill="currentColor"/></svg>',
  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5l1.3 2.4 2.7-.5.8 2.7 2.6 1-.9 2.6 1.9 2-1.9 2 .9 2.6-2.6 1-.8 2.7-2.7-.5L12 21.5l-1.3-2.4-2.7.5-.8-2.7-2.6-1 .9-2.6-1.9-2 1.9-2-.9-2.6 2.6-1 .8-2.7 2.7.5z"/></svg>',
  shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l8 3v6c0 5-3.4 8.7-8 10-4.6-1.3-8-5-8-10v-6z" fill="currentColor" opacity=".18"/><path d="M12 2.5l8 3v6c0 5-3.4 8.7-8 10-4.6-1.3-8-5-8-10v-6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>',
+ book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/><path d="M9 8h6"/></svg>',
  logo:'<svg viewBox="0 0 40 40" width="40" height="40"><path d="M20 3l14 5v10c0 9-6 15-14 18C12 33 6 27 6 18V8z" fill="#22d3ee"/><text x="20" y="25.5" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="17" fill="#06222c">R</text></svg>'
 };
 function spark(vals,color,{w=300,h=90,fill=true,id='g'}={}){
@@ -262,8 +269,8 @@ function render(){
     <div class="pv"><div class="k">총 평가액</div><div class="v num">${usd(p.total)}</div><div class="k">평가손익</div><div class="v num" style="color:${cost>0?sgn(pnl):'var(--mut)'}">${cost>0?usd(pnl):'평단 미입력'}</div><div class="k">현금</div><div class="v num" style="color:var(--mut)">${usd(p.cash)}</div></div></div>
     ${['QQQ','QLD','TQQQ'].filter(a=>h[a].n>0).map(a=>`<div class="hold"><span class="dot" style="background:${HEX[a]}"></span><span class="n">${a}</span><span class="q num">${h[a].n.toLocaleString()}주</span><span class="p num" style="color:${h[a].avg>0?sgn(px[a]/h[a].avg-1):'var(--mut)'}">${h[a].avg>0?sp(px[a]/h[a].avg-1):'-'}</span></div>`).join('')}</div>`}
   const fx=s.fx?`<div class="card tap fx" data-etf="FX"><div class="ch"><div><h2>USD / KRW</h2><div class="s">달러 자산의 원화 가치</div></div>${IC.chev.replace('<svg','<svg class="chev"')}</div><div style="margin:14px 0"><span class="v num">₩${Math.round(s.fx.usdkrw).toLocaleString()}</span><span class="d num" style="color:${s.fx.chg>=0?'var(--red)':'var(--cyan)'}">${sp(s.fx.chg)}</span></div>${spark(s.fx.series,'#ffb547',{id:'sgfx',h:90})}</div>`:'';
-  const btns=`<div class="btns"><button class="bt o" data-open="order">${IC.receipt}주문</button><button class="bt p" data-open="portfolio">${IC.wallet}포트폴리오</button><button class="bt s" data-open="settings">${IC.gear}계좌설정</button></div>`;
-  root.innerHTML=head(chips)+banners+clock+strat+acc+pulse+cond+indc+port+fx+btns+foot();
+  const btns=`<div class="btns"><button class="bt o" data-open="order">${IC.receipt}주문</button><button class="bt p" data-open="portfolio">${IC.wallet}포트폴리오</button><button class="bt j" data-open="trades">${IC.book}거래내역</button><button class="bt s" data-open="settings">${IC.gear}계좌설정</button></div>`;
+  root.innerHTML=head(chips)+banners+clock+strat+acc+ytdCard()+pulse+cond+indc+port+fx+btns+foot();
   bind();
 }
 const head=chips=>`<div class="top"><div class="logo">${IC.logo}</div><div class="grow"><h1>ROBUST V20</h1><div class="sub">Production Freeze 1.0 · Read Only Strategy</div></div><button class="iconbtn ${loading?'spin':''}" id="rf" aria-label="새로고침">${IC.refresh}</button></div>${chips||''}`;
@@ -275,8 +282,166 @@ function bind(){
 }
 setInterval(()=>{const a=$('clk'),b=$('clk2');if(a){const t=kstNow();a.textContent=t;b.textContent=t}},1000);
 
+/* ---------- trade journal (stored only on this phone) ---------- */
+let TR=[];
+const loadTr=()=>{try{const a=JSON.parse(store.get('v20.trades')||'[]');TR=Array.isArray(a)?a.filter(t=>t&&t.id&&t.date&&t.side):[]}catch(e){TR=[]}};
+const saveTr=()=>store.set('v20.trades',JSON.stringify(TR));
+const getStart=y=>{try{const o=JSON.parse(store.get('v20.start')||'{}');return +o[y]>0?+o[y]:0}catch(e){return 0}};
+const setStart=(y,v)=>{try{const o=JSON.parse(store.get('v20.start')||'{}');if(v>0)o[y]=v;else delete o[y];store.set('v20.start',JSON.stringify(o))}catch(e){}};
+const won=x=>(x<0?'-':'')+'₩'+Math.round(Math.abs(x)).toLocaleString('ko-KR');
+const usdS=x=>(x>=0?'+':'-')+usd(Math.abs(x));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const dnum=s=>Date.UTC(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10))/864e5;
+const isFlow=t=>t.side==='입금'||t.side==='출금';
+const ASSETS=['QQQ','QLD','TQQQ'];
+
+/* FIFO: realized P&L per sale (USD, and KRW when both buy and sell have an FX rate) */
+function fifo(){
+  const lots={QQQ:[],QLD:[],TQQQ:[]},realized=[];let short=0;
+  const list=TR.map((t,i)=>({...t,_i:i})).filter(t=>lots[t.a]&&(t.side==='매수'||t.side==='매도'))
+    .sort((x,y)=>x.date<y.date?-1:x.date>y.date?1:(x.side===y.side?x._i-y._i:(x.side==='매수'?-1:1)));
+  for(const t of list){
+    const q=+t.q||0,p=+t.p||0,fee=+t.fee||0,fx=+t.fx||0;
+    if(t.side==='매수'){lots[t.a].push({q,rem:q,p,fx,fee});continue}
+    let need=q,pnl=0,krw=0,krwOk=!!fx;
+    while(need>1e-9&&lots[t.a].length){
+      const L=lots[t.a][0],m=Math.min(need,L.rem),lf=L.q>0?L.fee*(m/L.q):0;
+      pnl+=m*(p-L.p)-lf;
+      if(fx&&L.fx)krw+=m*(p*fx-L.p*L.fx)-lf*L.fx;else krwOk=false;
+      L.rem-=m;need-=m;if(L.rem<=1e-9)lots[t.a].shift();
+    }
+    pnl-=fee;if(fx)krw-=fee*fx;
+    if(need>1e-9)short+=need;
+    realized.push({id:t.id,date:t.date,a:t.a,pnl,krw:krwOk?krw:null,short:need>1e-9?need:0});
+  }
+  return {lots,realized,short};
+}
+
+/* this-year summary: account-equity return (modified Dietz) + FIFO realized gains */
+function journal(){
+  const Y=kstNow().slice(0,4),today=kstNow().slice(0,10),f=fifo(),p=plan();
+  const start=getStart(Y),end=p?p.total:null;
+  const flows=TR.filter(t=>isFlow(t)&&t.date.slice(0,4)===Y);
+  const span=Math.max(1,dnum(today)-dnum(Y+'-01-01'));
+  let net=0,wsum=0;
+  for(const t of flows){const cf=(t.side==='입금'?1:-1)*(+t.p||0);net+=cf;wsum+=cf*Math.min(1,Math.max(0,(dnum(today)-dnum(t.date))/span))}
+  const base=start+wsum,gain=end==null?null:end-start-net;
+  const ret=(end!=null&&base>0&&(start>0||flows.length))?gain/base:null;
+  const yr=f.realized.filter(r=>r.date.slice(0,4)===Y);
+  const sum=(a,k)=>a.reduce((x,r)=>x+(r[k]||0),0);
+  const krwRows=yr.filter(r=>r.krw!=null),krwMiss=yr.length-krwRows.length;
+  const krw=sum(krwRows,'krw');
+  const tax=Math.max(0,krw-2500000)*0.22;
+  let unreal=null;
+  if(SIG&&SIG.closes){unreal=0;for(const a of ASSETS)for(const L of f.lots[a])unreal+=L.rem*((SIG.closes[a]||0)-L.p)}
+  return {Y,start,end,net,base,gain,ret,yrReal:sum(yr,'pnl'),yrN:yr.length,krw,krwMiss,tax,cumReal:sum(f.realized,'pnl'),unreal,short:f.short,per:Object.fromEntries(f.realized.map(r=>[r.id,r])),n:TR.length};
+}
+function ytdCard(){
+  const J=journal(),has=J.ret!=null;
+  return `<div class="card tap" data-open="trades"><div class="ch"><div><h2>올해 수익률</h2><div class="s">${J.Y}년 · 계좌 평가액 기준</div></div>${IC.chev.replace('<svg','<svg class="chev"')}</div>
+  ${has?`<div class="bigret num" style="color:${sgn(J.ret)}">${sp(J.ret)}</div><div class="txt m num" style="margin-top:0">올해 손익 ${usdS(J.gain)}</div>`:
+  `<p class="txt" style="margin-top:14px">${J.end==null?'계좌설정에서 잔고를 먼저 입력하세요.':'<b>연초 평가액</b>(또는 입금 내역)을 입력하면 올해 수익률이 계산됩니다.'}</p>`}
+  <div class="trio"><div><div class="k">연초 평가액</div><div class="v num" style="color:var(--mut)">${J.start>0?usd(J.start,0):'-'}</div></div><div><div class="k">순입출금</div><div class="v num" style="color:var(--mut)">${J.net?usdS(J.net).replace(/\.00$/,''):'-'}</div></div><div><div class="k">현재 평가액</div><div class="v num">${J.end!=null?usd(J.end,0):'-'}</div></div></div>
+  <p class="txt m" style="margin-top:12px">올해 실현손익 ${J.yrN?usdS(J.yrReal):'-'} · 기록 ${J.n}건 · 눌러서 거래 기록</p></div>`;
+}
+
+/* CSV / backup */
+function download(name,text,type){const b=new Blob(['﻿'+text],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
+function exportCsv(){
+  const rows=['date,ticker,side,qty,price_usd,fx_krw,fee_usd'];
+  TR.filter(t=>!isFlow(t)).slice().sort((x,y)=>x.date<y.date?-1:x.date>y.date?1:0).forEach(t=>rows.push([t.date,t.a,t.side==='매수'?'BUY':'SELL',t.q,t.p,t.fx||'',t.fee||''].join(',')));
+  download('v20_trades.csv',rows.join('\n'),'text/csv');
+}
+function exportJson(){download('v20_backup.json',JSON.stringify({app:'robust-v20',trades:TR,start:(()=>{try{return JSON.parse(store.get('v20.start')||'{}')}catch(e){return {}}})()},null,1),'application/json')}
+function importText(txt){
+  txt=txt.replace(/^﻿/,'').trim();let add=[],start=null;
+  try{
+    if(txt[0]==='{'||txt[0]==='['){const o=JSON.parse(txt);add=Array.isArray(o)?o:(o.trades||[]);start=o.start||null}
+    else{
+      const L=txt.split(/\r?\n/).filter(x=>x.trim()),H=L[0].split(',').map(x=>x.trim().toLowerCase()),ix=n=>H.indexOf(n);
+      for(const line of L.slice(1)){const c=line.split(',').map(x=>x.trim()),sd=(c[ix('side')]||'').toUpperCase();
+        const side=sd==='BUY'||c[ix('side')]==='매수'?'매수':sd==='SELL'||c[ix('side')]==='매도'?'매도':null;
+        const a=(c[ix('ticker')]||'').toUpperCase();
+        if(!side||!ASSETS.includes(a))continue;
+        add.push({date:c[ix('date')],a,side,q:parseFloat(c[ix('qty')]),p:parseFloat(c[ix('price_usd')]),fx:parseFloat(c[ix('fx_krw')])||0,fee:parseFloat(c[ix('fee_usd')])||0})}
+    }
+  }catch(e){return '파일을 읽지 못했습니다: '+e.message}
+  const key=t=>[t.date,t.side,t.a,+t.q,+t.p].join('|'),have=new Set(TR.map(key));let n=0,dup=0,bad=0;
+  for(const t of add){
+    if(!t||!/^\d{4}-\d{2}-\d{2}$/.test(t.date||'')||!['매수','매도','입금','출금'].includes(t.side)||!(+t.p>0)||(!isFlow(t)&&!(+t.q>0))){bad++;continue}
+    if(have.has(key(t))){dup++;continue}
+    TR.push({id:uid(),date:t.date,a:isFlow(t)?'CASH':t.a,side:t.side,q:isFlow(t)?1:+t.q,p:+t.p,fx:+t.fx||0,fee:+t.fee||0});have.add(key(t));n++;
+  }
+  if(start)for(const y of Object.keys(start))if(!getStart(y))setStart(y,+start[y]);
+  saveTr();return `가져오기 완료: ${n}건 추가`+(dup?`, 중복 ${dup}건 건너뜀`:'')+(bad?`, 형식 오류 ${bad}건 제외`:'');
+}
+
+/* trade sheet */
+function openTrades(st){
+  st=st||{};const sh=$('sheet'),J=journal();
+  const ed=st.edit?TR.find(t=>t.id===st.edit):null;
+  const d=ed||{date:(SIG&&SIG.next_exec_date)||kstNow().slice(0,10),side:'매도',a:'TQQQ',q:'',p:'',fx:'',fee:''};
+  const fxHint=SIG&&SIG.fx?Math.round(SIG.fx.usdkrw):'';
+  const opt=(arr,v)=>arr.map(x=>`<option${x===v?' selected':''}>${x}</option>`).join('');
+  const p=plan(),pend=p&&SIG?p.orders:[];
+  const kv=(k,v,c)=>`<div class="kv"><span>${k}</span><span class="num"${c?` style="color:${c}"`:''}>${v}</span></div>`;
+  const sumH=`<h3 class="sh">${J.Y}년 요약</h3>
+    ${J.ret!=null?`<div class="bigret num" style="color:${sgn(J.ret)}">${sp(J.ret)}</div>`:''}
+    ${kv('올해 수익률(계좌 평가액 기준)',J.ret!=null?sp(J.ret):'연초 평가액 입력 필요',J.ret!=null?sgn(J.ret):'var(--amber)')}
+    ${kv('올해 손익',J.gain!=null?usdS(J.gain):'-',J.gain!=null?sgn(J.gain):'')}
+    ${kv('연초 평가액',J.start>0?usd(J.start):'-')}${kv('올해 순입출금',J.net?usdS(J.net):'-')}${kv('현재 평가액 (입력 잔고 × 최근 종가)',J.end!=null?usd(J.end):'-')}
+    ${kv('올해 실현손익 (FIFO, USD)',J.yrN?usdS(J.yrReal):'-',J.yrN?sgn(J.yrReal):'')}
+    ${kv('올해 실현이익 (원화)',J.yrN&&J.krwMiss<J.yrN?won(J.krw):'환율 입력 필요',J.yrN&&J.krwMiss<J.yrN?sgn(J.krw):'var(--amber)')}
+    ${J.yrN&&J.krwMiss<J.yrN?kv('예상 양도세 (참고)',won(J.tax)+(J.krwMiss?` · 환율 미입력 ${J.krwMiss}건 제외`:'')):''}
+    ${kv('평가손익 (기록된 매수분)',J.unreal!=null&&!J.short?usdS(J.unreal):'-')}${kv('누적 실현손익 (USD)',J.n?usdS(J.cumReal):'-',J.n?sgn(J.cumReal):'')}
+    ${J.short?`<p class="amber">매도 수량이 기록된 매수보다 ${+J.short.toFixed(4)}주 많습니다. 이전부터 보유하던 주식은 날짜·평단으로 먼저 "매수"를 등록해야 실현손익이 맞습니다.</p>`:''}
+    <p class="txt m">수익률 = (현재 평가액 − 연초 평가액 − 순입금) ÷ (연초 평가액 + 가중 입금). 현재 평가액은 계좌설정에 입력한 잔고 기준이라, 매매 후 잔고도 갱신해야 정확합니다. 양도세는 실제로는 결제일(체결 다음 영업일) 기준·손실 이월 미반영으로 계산한 참고값입니다.</p>
+    <div class="field"><div><label for="t_start">${J.Y} 연초 평가액 (USD)</label><input type="number" id="t_start" inputmode="decimal" min="0" step="0.01" value="${J.start||''}" placeholder="1월 1일 계좌 평가액"></div><div style="display:flex;align-items:flex-end"><button class="btn g" id="t_startsave" style="width:100%">저장</button></div></div>`;
+  const formH=`<h3 class="sh">${ed?'거래 수정':'거래 추가'}</h3>
+    <div class="field"><div><label for="t_date">체결일 (미국장 기준)</label><input type="date" id="t_date" value="${esc(d.date)}"></div><div><label for="t_side">구분</label><select id="t_side">${opt(['매수','매도','입금','출금'],d.side)}</select></div></div>
+    <div class="field" id="t_arow"><div><label for="t_a">종목</label><select id="t_a">${opt(ASSETS,d.a)}</select></div><div><label for="t_q">수량 (주)</label><input type="number" id="t_q" inputmode="decimal" min="0" step="any" value="${isFlow(d)?'':esc(d.q)}"></div></div>
+    <div class="field"><div><label for="t_p" id="t_plab">체결가 (USD)</label><input type="number" id="t_p" inputmode="decimal" min="0" step="any" value="${esc(d.p)}"></div><div id="t_fxbox"><label for="t_fx">환율 (원/달러, 선택)</label><input type="number" id="t_fx" inputmode="decimal" min="0" step="any" value="${d.fx||''}" placeholder="${fxHint}"></div></div>
+    <div class="field" id="t_frow"><div><label for="t_fee">수수료 (USD, 선택)</label><input type="number" id="t_fee" inputmode="decimal" min="0" step="any" value="${d.fee||''}"></div><div></div></div>
+    <p class="amber" id="t_err" style="display:none"></p>
+    <div class="row2"><button class="btn" id="t_save">${ed?'수정 저장':'추가'}</button>${ed?'<button class="btn d" id="t_del">삭제</button><button class="btn g" id="t_cancel">취소</button>':''}</div>
+    ${!ed&&pend.length?`<div class="row2"><button class="btn g" id="t_fromplan">오늘 주문안 ${pend.length}건 기록 (예상가)</button></div><p class="txt m">주문안의 종가를 임시 체결가로 넣습니다. 실제 체결 후 각 거래를 눌러 체결가·환율을 수정하세요.</p>`:''}`;
+  const rows=TR.map((t,i)=>({...t,_i:i})).sort((x,y)=>x.date<y.date?1:x.date>y.date?-1:y._i-x._i);
+  const listH=`<h3 class="sh">거래 목록 (${TR.length}건)</h3>`+(rows.length?rows.map(t=>{
+    const r=J.per[t.id],fl=isFlow(t);
+    return `<div class="ord" data-edit="${esc(t.id)}" style="cursor:pointer"><span class="tag ${t.side==='매수'||t.side==='입금'?'b':'s'}">${t.side}</span><span class="n" style="color:${fl?'var(--mut)':COL[t.a]}">${fl?'현금':esc(t.a)}${t.est?'<span class="est">예상가</span>':''}</span>
+      <span class="q num">${fl?usd(t.p):(+t.q).toLocaleString()+'주'}<small>${fl?esc(t.date):usd(t.p)+' · '+esc(t.date)}${r&&t.side==='매도'?`<br><span style="color:${sgn(r.pnl)}">실현 ${usdS(r.pnl)}${r.krw!=null?' · '+won(r.krw):''}</span>`:''}</small></span></div>`}).join(''):'<p class="txt m">아직 기록이 없습니다. 위에서 거래를 추가하세요. 기존 보유분이 있으면 날짜와 평단으로 "매수"를 먼저 등록하세요.</p>');
+  const toolH=`<h3 class="sh">내보내기 · 가져오기</h3><div class="row2"><button class="btn g" id="t_csv">CSV</button><button class="btn g" id="t_json">백업</button><button class="btn g" id="t_imp">가져오기</button></div><input type="file" id="t_file" accept=".csv,.json,.txt" style="display:none">
+    <p class="txt m">기록은 이 휴대폰 브라우저에만 저장됩니다. 브라우저 데이터를 지우면 사라지니 가끔 "백업"으로 파일을 받아 두세요. CSV는 tax_reserve.py(세금 준비 도구)에 그대로 쓸 수 있습니다(입출금 제외).</p>`;
+  sh.innerHTML='<button class="iconbtn x" id="sx" aria-label="닫기">'+IC.x+'</button><h2>거래내역</h2>'+(st.msg?`<p class="txt" style="color:var(--green)">${esc(st.msg)}</p>`:'')+sumH+formH+listH+toolH;
+  $('ov').classList.add('on');$('sx').onclick=closeSheet;if(st.msg)sh.scrollTop=0;
+  const side=$('t_side'),sync=()=>{const f=side.value==='입금'||side.value==='출금';$('t_arow').style.display=f?'none':'';$('t_fxbox').style.display=f?'none':'';$('t_frow').style.display=f?'none':'';$('t_plab').textContent=f?'금액 (USD)':'체결가 (USD)'};
+  side.onchange=sync;sync();
+  $('t_startsave').onclick=()=>{setStart(J.Y,parseFloat($('t_start').value)||0);openTrades({msg:'연초 평가액을 저장했습니다.'});render()};
+  $('t_save').onclick=()=>{
+    const sd=side.value,fl=sd==='입금'||sd==='출금',date=$('t_date').value,q=parseFloat($('t_q').value),pr=parseFloat($('t_p').value),fx=parseFloat($('t_fx').value)||0,fee=parseFloat($('t_fee').value)||0;
+    const err=!/^\d{4}-\d{2}-\d{2}$/.test(date)?'체결일을 입력하세요.':!(pr>0)?(fl?'금액을 입력하세요.':'체결가를 입력하세요.'):(!fl&&!(q>0))?'수량을 입력하세요.':'';
+    if(err){const e=$('t_err');e.textContent=err;e.style.display='';return}
+    const rec={id:ed?ed.id:uid(),date,side:sd,a:fl?'CASH':$('t_a').value,q:fl?1:q,p:pr,fx:fl?0:fx,fee:fl?0:fee};
+    if(ed)TR=TR.map(t=>t.id===ed.id?rec:t);else TR.push(rec);
+    saveTr();openTrades({msg:ed?'수정했습니다.':'추가했습니다.'});render();
+  };
+  if(ed){
+    let armed=false;$('t_del').onclick=function(){if(!armed){armed=true;this.textContent='한 번 더 눌러 삭제';return}TR=TR.filter(t=>t.id!==ed.id);saveTr();openTrades({msg:'삭제했습니다.'});render()};
+    $('t_cancel').onclick=()=>openTrades();
+  }
+  const fp=$('t_fromplan');
+  if(fp)fp.onclick=()=>{let n=0;const have=new Set(TR.map(t=>[t.date,t.side,t.a,+t.q].join('|')));
+    for(const o of pend){const rec={id:uid(),date:SIG.next_exec_date,side:o.side,a:o.a,q:o.q,p:o.p,fx:0,fee:0,est:true};if(have.has([rec.date,rec.side,rec.a,rec.q].join('|')))continue;TR.push(rec);n++}
+    saveTr();openTrades({msg:n?`주문안 ${n}건을 기록했습니다. 체결가를 수정하세요.`:'이미 기록된 주문안입니다.'});render()};
+  sh.querySelectorAll('[data-edit]').forEach(r=>r.onclick=()=>{openTrades({edit:r.dataset.edit});sh.scrollTop=0});
+  $('t_csv').onclick=exportCsv;$('t_json').onclick=exportJson;
+  $('t_imp').onclick=()=>$('t_file').click();
+  $('t_file').onchange=async e=>{const f=e.target.files[0];if(!f)return;const m=importText(await f.text());openTrades({msg:m});render()};
+}
+
 /* ---------- sheets ---------- */
 function openSheet(kind){
+  if(kind==='trades'){openTrades();return}
   const sh=$('sheet');let h='<button class="iconbtn x" id="sx" aria-label="닫기">'+IC.x+'</button>';
   if(kind==='settings'){
     const a=ACC||{cash:0},g=(k,f)=>a[k]&&a[k][f]!=null?a[k][f]:'';
@@ -291,7 +456,7 @@ function openSheet(kind){
     else{const px=SIG.closes;h+=`<p class="txt m">신호 ${SIG.signal} · ${SIG.asof_close} 종가 기준 → ${SIG.next_exec_date} 시가 실행</p>`+
       (p.orders.length?p.orders.map(o=>`<div class="ord"><span class="tag ${o.side==='매수'?'b':'s'}">${o.side}</span><span class="n" style="color:${COL[o.a]}">${o.a}</span><span class="q num">${o.q.toLocaleString()}주<small>${usd(o.p)} · ${usd(o.q*o.p)}</small></span></div>`).join(''):'<p class="txt">입력 잔고 기준 주문안 없음</p>')+
       `<table class="t num"><tr><td>총 평가액</td><td>${usd(p.total)}</td></tr><tr><td>현금</td><td>${usd(p.cash)}</td></tr><tr><td>예상 잔여</td><td>${usd(p.left)}</td></tr></table>
-      <p class="txt m">목표주수 = floor[ 총평가액 × (1 − 0.5%) ÷ {종가 × (1 + 0.05%)} ]. 새 전략 전환이 있을 때만 목표 수량을 맞추고, HOLD일에는 비목표 자산 매도 안내만 유지합니다. 실제 시가가 크게 움직이면 수량을 다시 계산하세요.</p>`}
+      <p class="txt m">목표주수 = floor[ 총평가액 × (1 − 0.5%) ÷ {종가 × (1 + 0.05%)} ]. 새 전략 전환이 있을 때만 목표 수량을 맞추고, HOLD일에는 비목표 자산 매도 안내만 유지합니다. 실제 시가가 크게 움직이면 수량을 다시 계산하세요.</p><div class="row2"><button class="btn g" data-open2="trades">체결 기록하기</button></div>`}
   }else if(kind==='portfolio'){
     const p=plan();h+=`<h2>포트폴리오</h2>`;
     if(!p)h+='<p class="txt m">계좌설정에서 잔고를 먼저 입력하세요.</p>';
@@ -333,7 +498,8 @@ async function load(manual){
   }
   loading=false;render();
 }
-loadAcc();render();load(false);
+loadAcc();loadTr();render();load(false);
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(false)});
 if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>

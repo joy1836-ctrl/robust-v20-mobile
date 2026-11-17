@@ -112,14 +112,25 @@ def run(data, cfg, cost_bps=5.0):
     return f, ex
 
 
-def v20_pulse(sr, n, dates, window=252, tail=60):
-    """V20 전략 지수(세전·USD·왕복비용 반영). sr[t]는 t일 종가 신호가 다음 거래일에 만든 수익이므로
-    실제 거래일 t의 수익은 sr[t-1]이다. 252거래일 전 = 100 으로 환산."""
-    r = np.nan_to_num(np.asarray(sr, dtype=float)[: n - 1])
-    nav = np.cumprod(1.0 + r)
-    base = nav[-(window + 1)] if len(nav) > window else nav[0]
-    idx = nav[-(window + 1):] / base * 100.0
-    ds = list(dates)[1:n]                      # nav[k] 는 ds[k] 일자의 지수
+def v20_pulse(sr, n, dates, ex, f, window=252, tail=60):
+    """V20 전략 지수(세전·USD·왕복비용 반영), ETF 카드와 같은 '종가' 기준.
+    엔진 수익 sr[i]는 i일 시초가 → i+1일 시초가(시초가 체결) 수익이고 i일 거래비용이 포함돼 있다.
+    그래서 시초가 기준 가치 op[i]에 i일 비용을 반영하고 그날 시초→종가 수익을 곱해 종가 기준 가치를 만든다."""
+    r = np.nan_to_num(np.asarray(sr, dtype=float)[:n])
+    ex = np.asarray(ex)[:n]
+    op = np.r_[1.0, np.cumprod(1.0 + r)][:n]             # i일 시초가 시점 가치
+    nav = op.copy()
+    for k, a in ((1, "QQQ"), (2, "QLD"), (3, "TQQQ")):
+        m = ex == k
+        o2o = np.asarray(f[f"{a}_O2O_RET"], dtype=float)[:n]
+        cost = np.where(m, o2o - r, 0.0)                 # i일 체결 비용(= 자산 수익 − 전략 수익)
+        oc = np.asarray(f[f"{a}_CLOSE"], dtype=float)[:n] / np.asarray(f[f"{a}_OPEN"], dtype=float)[:n]
+        nav = np.where(m, op * (1.0 - cost) * oc, nav)
+    nav = np.where(ex == 0, op * (1.0 + r), nav)          # 현금일: 수익 0, 비용만 반영
+    idx = nav[-(window + 1):]
+    base = idx[0]
+    idx = idx / base * 100.0
+    ds = list(dates)[:n]                       # nav[k] 는 ds[k] 일자 종가 기준 지수
     yr = ds[-1].year
     prev = [k for k, d in enumerate(ds) if d.year < yr]
     ytd = float(nav[-1] / nav[prev[-1]] - 1.0) if prev else None
@@ -219,7 +230,7 @@ def build_signal(data, cfg, meta, integrity, cost_bps=5.0, synthetic=False, fx=N
             if fx and fx.get("ytd_base"):
                 pulse[a]["ytd_krw"] = float((1.0 + y) * (fx["usdkrw"] / fx["ytd_base"]) - 1.0)
     closes = {a: pulse[a]["close"] for a in pulse}
-    pulse["V20"] = v20_pulse(sr, n, data["QQQ"].index)
+    pulse["V20"] = v20_pulse(sr, n, data["QQQ"].index, ex, f)
     v = pulse["V20"]
     if fx and fx.get("ytd_base") and v.get("ytd") is not None:   # 원화 기준 = (1+달러수익률) × 환율변화 − 1
         v["ytd_krw"] = float((1.0 + v["ytd"]) * (fx["usdkrw"] / fx["ytd_base"]) - 1.0)

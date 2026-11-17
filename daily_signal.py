@@ -212,6 +212,12 @@ def build_signal(data, cfg, meta, integrity, cost_bps=5.0, synthetic=False, fx=N
         k = int(np.nanargmax(c))                       # 전체 기간 최고 종가
         pulse[a].update({"dd_all": float(c[-1] / c[k] - 1.0), "peak_date": idx[k].strftime("%Y-%m-%d"),
                          "days_since_peak": int(n - 1 - k), "since": idx[0].strftime("%Y-%m-%d")})
+        prevk = [j for j in range(n) if idx[j].year < idx[n - 1].year]   # 전년도 마지막 종가 = 올해 수익률 기준점
+        if prevk:
+            y = float(c[n - 1] / c[prevk[-1]] - 1.0)
+            pulse[a].update({"ytd": y, "ytd_year": int(idx[n - 1].year)})
+            if fx and fx.get("ytd_base"):
+                pulse[a]["ytd_krw"] = float((1.0 + y) * (fx["usdkrw"] / fx["ytd_base"]) - 1.0)
     closes = {a: pulse[a]["close"] for a in pulse}
     pulse["V20"] = v20_pulse(sr, n, data["QQQ"].index)
     v = pulse["V20"]

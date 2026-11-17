@@ -209,6 +209,9 @@ def build_signal(data, cfg, meta, integrity, cost_bps=5.0, synthetic=False, fx=N
         c = f[f"{a}_CLOSE"][: n]
         pulse[a] = {"close": float(c[-1]), "chg": float(c[-1] / c[-2] - 1), "dd252": g(f"{a}_DD252"),
                     "series": [round(float(x), 2) for x in c[-60:]]}
+        k = int(np.nanargmax(c))                       # 전체 기간 최고 종가
+        pulse[a].update({"dd_all": float(c[-1] / c[k] - 1.0), "peak_date": idx[k].strftime("%Y-%m-%d"),
+                         "days_since_peak": int(n - 1 - k), "since": idx[0].strftime("%Y-%m-%d")})
     closes = {a: pulse[a]["close"] for a in pulse}
     pulse["V20"] = v20_pulse(sr, n, data["QQQ"].index)
     v = pulse["V20"]

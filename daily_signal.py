@@ -112,14 +112,18 @@ def run(data, cfg, cost_bps=5.0):
     return f, ex
 
 
-def v20_pulse(sr, n, window=252, tail=60):
+def v20_pulse(sr, n, dates, window=252, tail=60):
     """V20 전략 지수(세전·USD·왕복비용 반영). sr[t]는 t일 종가 신호가 다음 거래일에 만든 수익이므로
     실제 거래일 t의 수익은 sr[t-1]이다. 252거래일 전 = 100 으로 환산."""
     r = np.nan_to_num(np.asarray(sr, dtype=float)[: n - 1])
     nav = np.cumprod(1.0 + r)
     base = nav[-(window + 1)] if len(nav) > window else nav[0]
     idx = nav[-(window + 1):] / base * 100.0
-    return {"close": round(float(idx[-1]), 2), "chg": float(idx[-1] / idx[-2] - 1),
+    ds = list(dates)[1:n]                      # nav[k] 는 ds[k] 일자의 지수
+    yr = ds[-1].year
+    prev = [k for k, d in enumerate(ds) if d.year < yr]
+    ytd = float(nav[-1] / nav[prev[-1]] - 1.0) if prev else None
+    return {"close": round(float(idx[-1]), 2), "ytd": ytd, "ytd_year": yr, "chg": float(idx[-1] / idx[-2] - 1),
             "dd252": float(idx[-1] / idx.max() - 1), "series": [round(float(x), 2) for x in idx[-tail:]],
             "kind": "index"}
 
@@ -197,7 +201,7 @@ def build_signal(data, cfg, meta, integrity, cost_bps=5.0, synthetic=False, fx=N
         pulse[a] = {"close": float(c[-1]), "chg": float(c[-1] / c[-2] - 1), "dd252": g(f"{a}_DD252"),
                     "series": [round(float(x), 2) for x in c[-60:]]}
     closes = {a: pulse[a]["close"] for a in pulse}
-    pulse["V20"] = v20_pulse(sr, n)
+    pulse["V20"] = v20_pulse(sr, n, data["QQQ"].index)
     return {
         "strategy": meta["strategy_name"], "freeze_date": meta["freeze_date"],
         "integrity": {**integrity, "synthetic_data": synthetic},

@@ -226,14 +226,18 @@ async function initChart(a){
   const DAY=['일','월','화','수','목','금','토'],W=320,Hh=150,pad=6,ZH='짚으면 날짜·값 · 두 손가락으로 확대 · 확대하면 한 손가락으로 옆으로 이동(길게 누르면 값) · 두 번 탭하면 원래대로';
   let n=0,V=[],D=[],vs=0,ve=0,cur={v:[],d:[]},ln=null,dot=null,raf=0;
   const full=()=>vs<=0.5&&ve>=V.length-1.5;
-  const stats=()=>{const v=cur.v,mx=$('stMax'),mn=$('stMin');if(mx)mx.textContent=fmt(Math.max(...v));if(mn)mn.textContent=fmt(Math.min(...v));
+  const stats=()=>{const v=cur.v,mx=$('stMax'),mn=$('stMin'),hi=v.indexOf(Math.max(...v)),lo=v.indexOf(Math.min(...v));if(mx)mx.innerHTML=fmt(v[hi])+'<div style="font-size:13px;font-weight:600;color:var(--mut)">'+cur.d[hi]+'</div>';if(mn)mn.innerHTML=fmt(v[lo])+'<div style="font-size:13px;font-weight:600;color:var(--mut)">'+cur.d[lo]+'</div>';
     const l=(RG.find(r=>r[0]===n)||[0,n+'일'])[1];document.querySelectorAll('.stLbl').forEach(e=>e.textContent=full()?'최근 '+l:cur.d[0].slice(2)+'~'+cur.d[cur.d.length-1].slice(2))};
   const render=()=>{const s=Math.round(vs),e=Math.round(ve);cur={v:V.slice(s,e+1),d:D.slice(s,e+1)};
     box.innerHTML=spark(cur.v,color,{id:'sgd'+a,w:W,h:Hh,sw:cur.v.length>300?1.8:3.2,dot:cur.v.length<=300});
     const svg=box.querySelector('svg');const ns='http://www.w3.org/2000/svg';ln=document.createElementNS(ns,'line');dot=document.createElementNS(ns,'circle');
     ln.setAttribute('y1',0);ln.setAttribute('y2',Hh);ln.setAttribute('stroke','#8fa6c4');ln.setAttribute('stroke-width','1.5');ln.setAttribute('stroke-dasharray','4 4');
     dot.setAttribute('r',7);dot.setAttribute('fill',color);dot.setAttribute('stroke','#fff');dot.setAttribute('stroke-width','2');
-    ln.style.display=dot.style.display='none';svg.appendChild(ln);svg.appendChild(dot);stats()};
+    ln.style.display=dot.style.display='none';
+    {const v=cur.v,L=v.length,mn=Math.min(...v),mx=Math.max(...v),rg=(mx-mn)||1;
+     [[v.indexOf(mx),'#2ee59d'],[v.indexOf(mn),'#ff5c7a']].forEach(([i,col])=>{const m=document.createElementNS(ns,'circle');
+      m.setAttribute('cx',pad+i/(Math.max(1,L-1))*(W-2*pad));m.setAttribute('cy',pad+(1-(v[i]-mn)/rg)*(Hh-2*pad));m.setAttribute('r',4.5);m.setAttribute('fill',col);m.setAttribute('stroke','#fff');m.setAttribute('stroke-width','1.5');svg.appendChild(m)})}
+    svg.appendChild(ln);svg.appendChild(dot);stats()};
   const sched=()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;render()})};
   const setRange=k=>{n=k;V=vals.slice(-k);D=dates.slice(-k);vs=0;ve=V.length-1;render();lab.innerHTML=ZH;chips.querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.n===n))};
   const svgRect=()=>box.querySelector('svg').getBoundingClientRect();

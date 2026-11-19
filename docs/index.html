@@ -97,6 +97,7 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
 .etf .dd{display:flex;justify-content:space-between;gap:4px;font-size:12px;color:var(--mut);margin-bottom:6px;white-space:nowrap}
 .etf .hint{font-size:12.5px;color:var(--dim);margin-top:6px}
 svg.spark{display:block;width:100%;height:auto;overflow:visible}
+.chips{display:flex;gap:8px;margin:10px 0 4px}.chips button{flex:1;padding:8px 0;border-radius:10px;border:1px solid #1c3550;background:#0d1d31;color:var(--mut);font-weight:700;font-size:14px}.chips button.on{background:#17314a;color:#fff;border-color:#2c5683}
 .chk{display:flex;align-items:center;gap:16px;padding:11px 0}
 .chk .c{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;flex:none}
 .chk .c svg{width:26px;height:26px}
@@ -183,13 +184,13 @@ const IC={
  shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l8 3v6c0 5-3.4 8.7-8 10-4.6-1.3-8-5-8-10v-6z" fill="currentColor" opacity=".18"/><path d="M12 2.5l8 3v6c0 5-3.4 8.7-8 10-4.6-1.3-8-5-8-10v-6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>',
  logo:'<svg viewBox="0 0 40 40" width="40" height="40"><path d="M20 3l14 5v10c0 9-6 15-14 18C12 33 6 27 6 18V8z" fill="#22d3ee"/><text x="20" y="25.5" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="17" fill="#06222c">R</text></svg>'
 };
-function spark(vals,color,{w=300,h=90,fill=true,id='g'}={}){
+function spark(vals,color,{w=300,h=90,fill=true,id='g',sw=3.2,dot=true}={}){
   if(!vals||vals.length<2)return '';
   const mn=Math.min(...vals),mx=Math.max(...vals),pad=6,rng=(mx-mn)||1;
   const X=i=>pad+i/(vals.length-1)*(w-2*pad),Y=v=>pad+(1-(v-mn)/rng)*(h-2*pad);
   const d=vals.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join(' ');
   const lx=X(vals.length-1),ly=Y(vals[vals.length-1]);
-  return `<svg class="spark" viewBox="0 0 ${w} ${h}" role="img" aria-label="최근 ${vals.length}거래일 추이"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".28"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>${fill?`<path d="${d} L${lx} ${h} L${X(0)} ${h} Z" fill="url(#${id})"/>`:''}<path d="${d}" fill="none" stroke="${color}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${lx}" cy="${ly}" r="6" fill="${color}"/></svg>`;
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" role="img" aria-label="최근 ${vals.length}거래일 추이"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".28"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>${fill?`<path d="${d} L${lx} ${h} L${X(0)} ${h} Z" fill="url(#${id})"/>`:''}<path d="${d}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>${dot?`<circle cx="${lx}" cy="${ly}" r="6" fill="${color}"/>`:''}</svg>`;
 }
 function scrub(svg,m,fmt,color){
   const vals=m.series,dates=m.dates;if(!svg||!dates||dates.length!==vals.length)return;
@@ -209,6 +210,28 @@ function scrub(svg,m,fmt,color){
   svg.addEventListener('pointerdown',e=>{try{svg.setPointerCapture(e.pointerId)}catch(_){}show(e)});
   svg.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||e.buttons||e.pointerType==='touch')show(e)});
   ['pointerup','pointercancel','pointerleave'].forEach(k=>svg.addEventListener(k,hide));
+}
+const HINT='차트를 손으로 짚으면 날짜와 값이 나옵니다';
+function chartShell(vals,color,id,w=320,h=150){return `<div id="scr" class="txt m num" style="min-height:24px;margin:6px 0 2px">${HINT}</div><div id="chartbox">${spark(vals,color,{id,w,h})}</div><div id="chips" class="chips"></div>`}
+async function initChart(a){
+  const isFx=a==='FX',base=isFx?SIG.fx:(SIG.pulse&&SIG.pulse[a]);if(!base)return;
+  let H=null;try{const r=await fetch('history.json',{cache:'no-store'});if(r.ok)H=await r.json()}catch(_){}
+  const dates=H?(isFx?(H.fx&&H.fx.dates):H.dates):base.dates,vals=H?(isFx?(H.fx&&H.fx.series):H[a]):base.series;
+  if(!dates||!vals||dates.length!==vals.length||vals.length<20)return;
+  const color=isFx?'#ffb547':HEX[a],ix=!isFx&&base.kind==='index';
+  const fmt=isFx?(v=>'₩'+Number(v).toLocaleString('ko-KR',{minimumFractionDigits:2,maximumFractionDigits:2})):(ix?(v=>Number(v).toFixed(1)):usd);
+  const RG=[[60,'3개월'],[252,'1년'],[756,'3년'],[1260,'5년']].filter(r=>r[0]<=vals.length);
+  if(vals.length>(RG.length?RG[RG.length-1][0]:0))RG.push([vals.length,'전체']);
+  const box=$('chartbox'),chips=$('chips');if(!box||!chips)return;
+  const draw=n=>{const v=vals.slice(-n),d=dates.slice(-n),lab=(RG.find(r=>r[0]===n)||[0,n+'일'])[1];
+    box.innerHTML=spark(v,color,{id:'sgd'+a,w:320,h:150,sw:n>300?1.8:3.2,dot:n<=300});
+    scrub(box.querySelector('svg'),{series:v,dates:d},fmt,color);
+    const mx=$('stMax'),mn=$('stMin');if(mx)mx.textContent=fmt(Math.max(...v));if(mn)mn.textContent=fmt(Math.min(...v));
+    const sl=document.querySelectorAll('.stLbl');sl.forEach(e=>e.textContent='최근 '+lab);
+    chips.querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.n===n))};
+  chips.innerHTML=RG.map(r=>`<button data-n="${r[0]}">${r[1]}</button>`).join('');
+  chips.querySelectorAll('button').forEach(b=>b.onclick=()=>draw(+b.dataset.n));
+  draw(RG.length?RG[RG.length-1][0]:vals.length);
 }
 function donut(parts){
   const R=42,C=2*Math.PI*R;let off=0;
@@ -323,12 +346,11 @@ function openSheet(kind){
       `<tr><td>현금</td><td></td><td></td><td></td><td>${usd(p.cash)}</td><td></td></tr><tr><td style="font-weight:900">합계</td><td></td><td></td><td></td><td style="font-weight:900">${usd(p.total)}</td><td></td></tr>${SIG.fx?`<tr><td>원화 환산</td><td></td><td></td><td>₩${Math.round(SIG.fx.usdkrw).toLocaleString('ko-KR')}</td><td style="font-weight:900;color:var(--amber)">${krw(p.total)}</td><td></td></tr>`:''}</table><div class="row2"><button class="btn g" data-open2="settings">잔고 수정</button></div>`}
   }else if(kind.startsWith('etf:')){
     const a=kind.slice(4);
-    if(a==='FX'&&SIG.fx){h+=`<h2>USD / KRW</h2><p class="txt m num">₩${SIG.fx.usdkrw.toFixed(2)} · 전일 대비 ${sp(SIG.fx.chg)} · 최근 ${SIG.fx.series.length}거래일</p>`+`<div id="scr" class="txt m num" style="min-height:24px;margin:6px 0 2px">차트를 손으로 짚으면 날짜와 값이 나옵니다</div>`+spark(SIG.fx.series,'#ffb547',{id:'sgfx2',w:320,h:150})}
-    else if(SIG.pulse[a]){const m=SIG.pulse[a],mn=Math.min(...m.series),mx=Math.max(...m.series),ix=m.kind==='index',f=ix?(v=>Number(v).toFixed(1)):usd;h+=`<h2 style="color:${COL[a]}">${ix?'V20 전략 지수':a}</h2><p class="txt m num">${ix?pxf(a,m):usd(m.close)} · 전일 대비 ${sp(m.chg)} · ${m.dd_all!=null?'역대 고점 대비 '+sp(m.dd_all):'252일 고점 대비 '+sp(m.dd252)}</p>`+(m.peak_date?`<p class="txt m num" style="margin:0 0 6px">역대 고점 ${m.peak_date} · 이후 ${m.days_since_peak}거래일 경과 (${m.since.slice(0,4)}년 이후 기준)</p>`:'')+(m.ytd!=null?`<p class="txt num" style="font-size:18px;font-weight:800;margin:4px 0 8px">${m.ytd_year}년 수익률 <span style="color:${sgn(m.ytd)}">${sp(m.ytd)}</span></p>`+(m.ytd_krw!=null?`<p class="txt num" style="margin:0 0 8px">원화 기준 <span style="color:${sgn(m.ytd_krw)};font-weight:700">${sp(m.ytd_krw)}</span> <span style="color:var(--mut)">(환율 반영, 세전)</span></p>`:''):'')+`<div id="scr" class="txt m num" style="min-height:24px;margin:6px 0 2px">차트를 손으로 짚으면 날짜와 값이 나옵니다</div>`+spark(m.series,HEX[a],{id:'sgd'+a,w:320,h:150})+`<table class="t num"><tr><td>최근 ${m.series.length}거래일 최고</td><td>${f(mx)}</td></tr><tr><td>최근 ${m.series.length}거래일 최저</td><td>${f(mn)}</td></tr></table>`+(ix?'<p class="txt m" style="margin-top:10px">252거래일 전 = 100 기준 V20 신호 추종 지수입니다. 수익률·고점 대비는 세전·달러 기준이며 왕복 비용 5bp를 반영했습니다. 원화 기준 수익률은 연초 대비 환율 변화를 곱한 값이고, 세금·실제 체결가 차이는 반영하지 않습니다.</p>':'')}
+    if(a==='FX'&&SIG.fx){h+=`<h2>USD / KRW</h2><p class="txt m num">₩${SIG.fx.usdkrw.toFixed(2)} · 전일 대비 ${sp(SIG.fx.chg)} · 최근 ${SIG.fx.series.length}거래일</p>`+chartShell(SIG.fx.series,'#ffb547','sgfx2')}
+    else if(SIG.pulse[a]){const m=SIG.pulse[a],mn=Math.min(...m.series),mx=Math.max(...m.series),ix=m.kind==='index',f=ix?(v=>Number(v).toFixed(1)):usd;h+=`<h2 style="color:${COL[a]}">${ix?'V20 전략 지수':a}</h2><p class="txt m num">${ix?pxf(a,m):usd(m.close)} · 전일 대비 ${sp(m.chg)} · ${m.dd_all!=null?'역대 고점 대비 '+sp(m.dd_all):'252일 고점 대비 '+sp(m.dd252)}</p>`+(m.peak_date?`<p class="txt m num" style="margin:0 0 6px">역대 고점 ${m.peak_date} · 이후 ${m.days_since_peak}거래일 경과 (${m.since.slice(0,4)}년 이후 기준)</p>`:'')+(m.ytd!=null?`<p class="txt num" style="font-size:18px;font-weight:800;margin:4px 0 8px">${m.ytd_year}년 수익률 <span style="color:${sgn(m.ytd)}">${sp(m.ytd)}</span></p>`+(m.ytd_krw!=null?`<p class="txt num" style="margin:0 0 8px">원화 기준 <span style="color:${sgn(m.ytd_krw)};font-weight:700">${sp(m.ytd_krw)}</span> <span style="color:var(--mut)">(환율 반영, 세전)</span></p>`:''):'')+chartShell(m.series,HEX[a],'sgd'+a)+`<table class="t num"><tr><td><span class="stLbl">최근 ${m.series.length}거래일</span> 최고</td><td id="stMax">${f(mx)}</td></tr><tr><td><span class="stLbl">최근 ${m.series.length}거래일</span> 최저</td><td id="stMin">${f(mn)}</td></tr></table>`+(ix?'<p class="txt m" style="margin-top:10px">252거래일 전 = 100 기준 V20 신호 추종 지수입니다. 수익률·고점 대비는 세전·달러 기준이며 왕복 비용 5bp를 반영했습니다. 원화 기준 수익률은 연초 대비 환율 변화를 곱한 값이고, 세금·실제 체결가 차이는 반영하지 않습니다.</p>':'')}
   }
   sh.innerHTML=h;$('ov').classList.add('on');
-  if(kind==='etf:FX'&&SIG.fx&&SIG.fx.dates)scrub(sh.querySelector('svg.spark'),SIG.fx,v=>'₩'+Number(v).toLocaleString('ko-KR',{minimumFractionDigits:2,maximumFractionDigits:2}),'#ffb547');
-  if(kind.startsWith('etf:')&&SIG.pulse&&SIG.pulse[kind.slice(4)]){const a=kind.slice(4),m=SIG.pulse[a];scrub(sh.querySelector('svg.spark'),m,m.kind==='index'?(v=>Number(v).toFixed(1)):usd,HEX[a])}
+  if(kind.startsWith('etf:')){const a=kind.slice(4);const m=a==='FX'?SIG.fx:(SIG.pulse&&SIG.pulse[a]);if(m){if(m.dates)scrub(sh.querySelector('svg.spark'),m,a==='FX'?(v=>'₩'+Number(v).toLocaleString('ko-KR',{minimumFractionDigits:2,maximumFractionDigits:2})):(m.kind==='index'?(v=>Number(v).toFixed(1)):usd),a==='FX'?'#ffb547':HEX[a]);initChart(a)}}
   $('sx').onclick=closeSheet;
   sh.querySelectorAll('[data-open2]').forEach(b=>b.onclick=()=>openSheet(b.dataset.open2));
   if(kind==='settings'){

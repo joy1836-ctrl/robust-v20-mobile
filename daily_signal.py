@@ -112,10 +112,10 @@ def run(data, cfg, cost_bps=5.0):
     return f, ex
 
 
-def v20_pulse(sr, n, dates, ex, f, window=252, tail=60):
-    """V20 전략 지수(세전·USD·왕복비용 반영), ETF 카드와 같은 '종가' 기준.
-    엔진 수익 sr[i]는 i일 시초가 → i+1일 시초가(시초가 체결) 수익이고 i일 거래비용이 포함돼 있다.
-    그래서 시초가 기준 가치 op[i]에 i일 비용을 반영하고 그날 시초→종가 수익을 곱해 종가 기준 가치를 만든다."""
+def v20_nav(sr, n, ex, f):
+    """V20 전략 지수(종가 기준, 시작=1.0). 엔진 수익 sr[i]는 i일 시초가 → i+1일 시초가(시초가 체결) 수익이고
+    i일 거래비용이 포함돼 있다. 시초가 가치 op[i]에 i일 비용을 반영하고 그날 시초→종가 수익을 곱해 종가 기준 가치를 만든다."""
+
     r = np.nan_to_num(np.asarray(sr, dtype=float)[:n])
     ex = np.asarray(ex)[:n]
     op = np.r_[1.0, np.cumprod(1.0 + r)][:n]             # i일 시초가 시점 가치
@@ -127,6 +127,12 @@ def v20_pulse(sr, n, dates, ex, f, window=252, tail=60):
         oc = np.asarray(f[f"{a}_CLOSE"], dtype=float)[:n] / np.asarray(f[f"{a}_OPEN"], dtype=float)[:n]
         nav = np.where(m, op * (1.0 - cost) * oc, nav)
     nav = np.where(ex == 0, op * (1.0 + r), nav)          # 현금일: 수익 0, 비용만 반영
+    return nav
+
+
+def v20_pulse(sr, n, dates, ex, f, window=252, tail=60):
+    """V20 카드용 지표(252거래일 전=100, 종가 기준)."""
+    nav = v20_nav(sr, n, ex, f)
     idx = nav[-(window + 1):]
     base = idx[0]
     idx = idx / base * 100.0
@@ -179,14 +185,16 @@ def guidance(signal: str, target: str, gate_pass: bool):
 def fetch_fx():
     try:
         import yfinance as yf
-        raw = yf.download("KRW=X", period="2y", interval="1d", auto_adjust=True, progress=False, threads=False)
+        raw = yf.download("KRW=X", period="6y", interval="1d", auto_adjust=True, progress=False, threads=False)
         full = E._normalize_ohlcv(raw)["Close"].dropna()
         s = full.tail(60)
         if len(s) < 5:
             return None
         out = {"usdkrw": float(s.iloc[-1]), "chg": float(s.iloc[-1] / s.iloc[-2] - 1),
                "series": [round(float(x), 2) for x in s],
-               "dates": [d.strftime("%Y-%m-%d") for d in s.index]}
+               "dates": [d.strftime("%Y-%m-%d") for d in s.index],
+               "_hist": {"dates": [d.strftime("%Y-%m-%d") for d in full.index[-1260:]],
+                         "series": [round(float(x), 2) for x in full.iloc[-1260:]]}}
         prev = full[full.index.year < full.index[-1].year]   # 전년도 마지막 환율 = 올해 수익률 기준점
         if len(prev):
             out["ytd_base"] = round(float(prev.iloc[-1]), 2)
@@ -236,6 +244,12 @@ def build_signal(data, cfg, meta, integrity, cost_bps=5.0, synthetic=False, fx=N
     v = pulse["V20"]
     if fx and fx.get("ytd_base") and v.get("ytd") is not None:   # 원화 기준 = (1+달러수익률) × 환율변화 − 1
         v["ytd_krw"] = float((1.0 + v["ytd"]) * (fx["usdkrw"] / fx["ytd_base"]) - 1.0)
+    H = 1260                                   # 약 5년(거래일). 차트용 장기 이력은 signal.json이 아니라 history.json에 따로 저장
+    vnav = v20_nav(sr, n, ex, f)
+    chart = {"dates": [d.strftime("%Y-%m-%d") for d in idx[-H:]]}
+    for a in ("QQQ", "QLD", "TQQQ"):
+        chart[a] = [round(float(x), 2) for x in np.asarray(f[f"{a}_CLOSE"], dtype=float)[:n][-H:]]
+    chart["V20"] = [round(float(x), 2) for x in (vnav / vnav[-(252 + 1):][0] * 100.0)[-H:]]
     return {
         "strategy": meta["strategy_name"], "freeze_date": meta["freeze_date"],
         "integrity": {**integrity, "synthetic_data": synthetic},
@@ -247,7 +261,7 @@ def build_signal(data, cfg, meta, integrity, cost_bps=5.0, synthetic=False, fx=N
         "target_state": tgt, "target_asset": STATE_NAME[tgt],
         "signal": sig, "guide": guide,
         "closes": closes,
-        "pulse": pulse, "fx": fx,
+        "pulse": pulse, "fx": fx, "_chart": chart,
         "indicators": {
             "core_score": int(trend) + int(mom) + int(volok),
             "trend_pass": bool(trend), "mom_pass": bool(mom), "vol_pass": bool(volok),
@@ -282,6 +296,12 @@ def main():
             sys.exit(3)
     sig = build_signal(data, cfg, meta, integ, a.cost_bps, synthetic=a.self_test,
                        fx=None if (a.self_test or a.data_dir) else fetch_fx())
+    chart = sig.pop("_chart", None)
+    fxh = (sig.get("fx") or {}).pop("_hist", None)
+    if chart is not None:
+        if fxh:
+            chart["fx"] = fxh
+        Path(a.out).with_name("history.json").write_text(json.dumps(chart, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     Path(a.out).write_text(json.dumps(sig, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({k: sig[k] for k in ("asof_close", "next_exec_date", "prev_asset", "target_asset", "signal")}, ensure_ascii=False),
           sig["guide"]["status"])

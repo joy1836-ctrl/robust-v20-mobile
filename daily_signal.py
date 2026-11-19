@@ -139,7 +139,7 @@ def v20_pulse(sr, n, dates, ex, f, window=252, tail=60):
            "days_since_peak": int(len(nav) - 1 - k), "since": ds[0].strftime("%Y-%m-%d")}
     return {**ath, "close": round(float(idx[-1]), 2), "ytd": ytd, "ytd_year": yr, "chg": float(idx[-1] / idx[-2] - 1),
             "dd252": float(idx[-1] / idx.max() - 1), "series": [round(float(x), 2) for x in idx[-tail:]],
-            "kind": "index"}
+            "dates": [d.strftime("%Y-%m-%d") for d in ds[-tail:]], "kind": "index"}
 
 
 def classify(prev: int, tgt: int) -> str:
@@ -185,7 +185,8 @@ def fetch_fx():
         if len(s) < 5:
             return None
         out = {"usdkrw": float(s.iloc[-1]), "chg": float(s.iloc[-1] / s.iloc[-2] - 1),
-               "series": [round(float(x), 2) for x in s]}
+               "series": [round(float(x), 2) for x in s],
+               "dates": [d.strftime("%Y-%m-%d") for d in s.index]}
         prev = full[full.index.year < full.index[-1].year]   # 전년도 마지막 환율 = 올해 수익률 기준점
         if len(prev):
             out["ytd_base"] = round(float(prev.iloc[-1]), 2)
@@ -219,7 +220,8 @@ def build_signal(data, cfg, meta, integrity, cost_bps=5.0, synthetic=False, fx=N
     for a in ("QQQ", "QLD", "TQQQ"):
         c = f[f"{a}_CLOSE"][: n]
         pulse[a] = {"close": float(c[-1]), "chg": float(c[-1] / c[-2] - 1), "dd252": g(f"{a}_DD252"),
-                    "series": [round(float(x), 2) for x in c[-60:]]}
+                    "series": [round(float(x), 2) for x in c[-60:]],
+                    "dates": [d.strftime("%Y-%m-%d") for d in idx[-60:]]}
         k = int(np.nanargmax(c))                       # 전체 기간 최고 종가
         pulse[a].update({"dd_all": float(c[-1] / c[k] - 1.0), "peak_date": idx[k].strftime("%Y-%m-%d"),
                          "days_since_peak": int(n - 1 - k), "since": idx[0].strftime("%Y-%m-%d")})

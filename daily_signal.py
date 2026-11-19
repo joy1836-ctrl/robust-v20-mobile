@@ -142,6 +142,21 @@ def chart_start(dates):
     return 0
 
 
+def ytd_mdd(c, ds):
+    """올해 최대 낙폭: 전년도 마지막 종가를 시작점으로, 올해 안에서 (종가 ÷ 그때까지 최고 종가 − 1)의 최저값."""
+    c = np.asarray(c, dtype=float)
+    yr = ds[len(c) - 1].year
+    prev = [k for k, d in enumerate(ds[:len(c)]) if d.year < yr]
+    if not prev:
+        return None
+    k0 = prev[-1]
+    seg = c[k0:]
+    dd = seg / np.maximum.accumulate(seg) - 1.0
+    j = int(np.argmin(dd))
+    pk = int(np.argmax(seg[: j + 1]))
+    return {"ytd_mdd": float(dd[j]), "ytd_mdd_date": ds[k0 + j].strftime("%Y-%m-%d"), "ytd_mdd_peak_date": ds[k0 + pk].strftime("%Y-%m-%d")}
+
+
 def v20_scaled(nav, dates):
     """기준일(2021년 첫 개장일) 종가 지수를 V20_BASE(10)로 맞춘 지수."""
     return nav / nav[chart_start(dates)] * V20_BASE
@@ -160,7 +175,8 @@ def v20_pulse(sr, n, dates, ex, f, window=252, tail=60):
     ath = {"dd_all": float(nav[-1] / nav[k] - 1.0), "peak_date": ds[k].strftime("%Y-%m-%d"),
            "days_since_peak": int(len(nav) - 1 - k), "since": ds[0].strftime("%Y-%m-%d")}
     bd = ds[chart_start(ds)]
-    return {**ath, "base": V20_BASE, "base_date": bd.strftime("%Y-%m-%d"), "close": round(float(idx[-1]), 3), "ytd": ytd, "ytd_year": yr, "chg": float(idx[-1] / idx[-2] - 1),
+    mdd = ytd_mdd(nav, ds) or {}
+    return {**ath, **mdd, "base": V20_BASE, "base_date": bd.strftime("%Y-%m-%d"), "close": round(float(idx[-1]), 3), "ytd": ytd, "ytd_year": yr, "chg": float(idx[-1] / idx[-2] - 1),
             "dd252": float(idx[-1] / idx.max() - 1), "series": [round(float(x), 3) for x in idx[-tail:]],
             "dates": [d.strftime("%Y-%m-%d") for d in ds[-tail:]], "kind": "index"}
 
@@ -253,7 +269,7 @@ def build_signal(data, cfg, meta, integrity, cost_bps=5.0, synthetic=False, fx=N
         prevk = [j for j in range(n) if idx[j].year < idx[n - 1].year]   # 전년도 마지막 종가 = 올해 수익률 기준점
         if prevk:
             y = float(c[n - 1] / c[prevk[-1]] - 1.0)
-            pulse[a].update({"ytd": y, "ytd_year": int(idx[n - 1].year)})
+            pulse[a].update({"ytd": y, "ytd_year": int(idx[n - 1].year), **(ytd_mdd(c, idx) or {})})
             if fx and fx.get("ytd_base"):
                 pulse[a]["ytd_krw"] = float((1.0 + y) * (fx["usdkrw"] / fx["ytd_base"]) - 1.0)
     closes = {a: pulse[a]["close"] for a in pulse}

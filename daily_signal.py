@@ -130,29 +130,36 @@ def v20_nav(sr, n, ex, f):
     return nav
 
 
-CHART_DAYS = 1260          # 차트 이력 길이(약 5년)
-V20_BASE = 10.0            # V20 지수 눈금: 차트 시작점(5년 전) = 10
+CHART_BASE_DATE = "2021-01-04"   # 차트·V20 지수 기준일(2021년 첫 개장일). 고정이라 매일 바뀌지 않음
+V20_BASE = 10.0            # V20 지수 눈금: 기준일 = 10
 
 
-def v20_scaled(nav):
-    """차트 시작점(최근 CHART_DAYS 거래일의 첫날, 데이터가 짧으면 첫날)을 V20_BASE로 맞춘 지수."""
-    b = nav[-CHART_DAYS] if len(nav) >= CHART_DAYS else nav[0]
-    return nav / b * V20_BASE
+def chart_start(dates):
+    """기준일(포함) 이후 첫 거래일의 위치. 데이터가 기준일보다 짧으면 0."""
+    for k, d in enumerate(dates):
+        if d.strftime("%Y-%m-%d") >= CHART_BASE_DATE:
+            return k
+    return 0
+
+
+def v20_scaled(nav, dates):
+    """기준일(2021년 첫 개장일) 종가 지수를 V20_BASE(10)로 맞춘 지수."""
+    return nav / nav[chart_start(dates)] * V20_BASE
 
 
 def v20_pulse(sr, n, dates, ex, f, window=252, tail=60):
     """V20 카드용 지표(종가 기준, 5년 전=10 눈금)."""
     nav = v20_nav(sr, n, ex, f)
-    sc = v20_scaled(nav)
-    idx = sc[-(window + 1):]
-    ds = list(dates)[:n]                       # nav[k] 는 ds[k] 일자 종가 기준 지수
+    ds = list(dates)[:n]
+    sc = v20_scaled(nav, ds)
+    idx = sc[-(window + 1):]                       # nav[k] 는 ds[k] 일자 종가 기준 지수
     yr = ds[-1].year
     prev = [k for k, d in enumerate(ds) if d.year < yr]
     ytd = float(nav[-1] / nav[prev[-1]] - 1.0) if prev else None
     k = int(np.argmax(nav))                    # 전체 기간 최고점(역대 고점)
     ath = {"dd_all": float(nav[-1] / nav[k] - 1.0), "peak_date": ds[k].strftime("%Y-%m-%d"),
            "days_since_peak": int(len(nav) - 1 - k), "since": ds[0].strftime("%Y-%m-%d")}
-    bd = ds[-CHART_DAYS] if len(ds) >= CHART_DAYS else ds[0]
+    bd = ds[chart_start(ds)]
     return {**ath, "base": V20_BASE, "base_date": bd.strftime("%Y-%m-%d"), "close": round(float(idx[-1]), 3), "ytd": ytd, "ytd_year": yr, "chg": float(idx[-1] / idx[-2] - 1),
             "dd252": float(idx[-1] / idx.max() - 1), "series": [round(float(x), 3) for x in idx[-tail:]],
             "dates": [d.strftime("%Y-%m-%d") for d in ds[-tail:]], "kind": "index"}
@@ -203,8 +210,8 @@ def fetch_fx():
         out = {"usdkrw": float(s.iloc[-1]), "chg": float(s.iloc[-1] / s.iloc[-2] - 1),
                "series": [round(float(x), 2) for x in s],
                "dates": [d.strftime("%Y-%m-%d") for d in s.index],
-               "_hist": {"dates": [d.strftime("%Y-%m-%d") for d in full.index[-1260:]],
-                         "series": [round(float(x), 2) for x in full.iloc[-1260:]]}}
+               "_hist": {"dates": [d.strftime("%Y-%m-%d") for d in full.index if d.strftime("%Y-%m-%d") >= CHART_BASE_DATE],
+                         "series": [round(float(x), 2) for d, x in full.items() if d.strftime("%Y-%m-%d") >= CHART_BASE_DATE]}}
         prev = full[full.index.year < full.index[-1].year]   # 전년도 마지막 환율 = 올해 수익률 기준점
         if len(prev):
             out["ytd_base"] = round(float(prev.iloc[-1]), 2)
@@ -254,12 +261,12 @@ def build_signal(data, cfg, meta, integrity, cost_bps=5.0, synthetic=False, fx=N
     v = pulse["V20"]
     if fx and fx.get("ytd_base") and v.get("ytd") is not None:   # 원화 기준 = (1+달러수익률) × 환율변화 − 1
         v["ytd_krw"] = float((1.0 + v["ytd"]) * (fx["usdkrw"] / fx["ytd_base"]) - 1.0)
-    H = CHART_DAYS                             # 약 5년(거래일). 차트용 장기 이력은 signal.json이 아니라 history.json에 따로 저장
+    c0 = chart_start(idx[:n])                  # 기준일 이후 이력. 차트용 장기 이력은 signal.json이 아니라 history.json에 따로 저장
     vnav = v20_nav(sr, n, ex, f)
-    chart = {"dates": [d.strftime("%Y-%m-%d") for d in idx[-H:]]}
+    chart = {"dates": [d.strftime("%Y-%m-%d") for d in idx[c0:n]]}
     for a in ("QQQ", "QLD", "TQQQ"):
-        chart[a] = [round(float(x), 2) for x in np.asarray(f[f"{a}_CLOSE"], dtype=float)[:n][-H:]]
-    chart["V20"] = [round(float(x), 3) for x in v20_scaled(vnav)[-H:]]
+        chart[a] = [round(float(x), 2) for x in np.asarray(f[f"{a}_CLOSE"], dtype=float)[:n][c0:]]
+    chart["V20"] = [round(float(x), 3) for x in v20_scaled(vnav, idx[:n])[c0:]]
     return {
         "strategy": meta["strategy_name"], "freeze_date": meta["freeze_date"],
         "integrity": {**integrity, "synthetic_data": synthetic},

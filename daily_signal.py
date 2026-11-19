@@ -185,7 +185,8 @@ def fetch_fx():
         if len(s) < 5:
             return None
         out = {"usdkrw": float(s.iloc[-1]), "chg": float(s.iloc[-1] / s.iloc[-2] - 1),
-               "series": [round(float(x), 2) for x in s]}
+               "series": [round(float(x), 2) for x in s],
+               "dates": [d.strftime("%Y-%m-%d") for d in s.index]}
         prev = full[full.index.year < full.index[-1].year]   # 전년도 마지막 환율 = 올해 수익률 기준점
         if len(prev):
             out["ytd_base"] = round(float(prev.iloc[-1]), 2)

@@ -276,7 +276,7 @@ function donut(parts){
 }
 
 /* ---------- state ---------- */
-let SIG=null,ACC=null,loadErr='',loading=false;
+let SIG=null,INT=null,ACC=null,loadErr='',loading=false;
 const loadAcc=()=>{try{ACC=JSON.parse(store.get('v20.acct')||'null')}catch(e){ACC=null}};
 const kstNow=()=>new Date(Date.now()+9*3600e3).toISOString().slice(0,19).replace('T',' ');
 const kstOf=iso=>iso?new Date(Date.parse(iso)+9*3600e3).toISOString().slice(0,19).replace('T',' '):'-';
@@ -302,6 +302,21 @@ function plan(){
 /* ---------- render ---------- */
 function statusClass(){const s=SIG.guide.status;return /매도/.test(s)?'sell':/대기|유지|현금/.test(s)?(/대기/.test(s)?'warn':'ok'):''}
 function pillFor(t){return /매수 대기/.test(t)?'wait':/매도/.test(t)?'sell':/보유 유지/.test(t)?'keep':'buy'}
+function intrCard(){
+  const o=INT;if(!o||!o.intraday||!SIG)return '';
+  if(!(o.asof_close>SIG.asof_close)||Date.now()-Date.parse(o.generated_utc)>14*3600e3)return '';
+  const i=o.indicators,g=o.guide,diff=o.target_asset!==SIG.target_asset;
+  const stText=t=>t==='CASH'?'현금':t;
+  const row=(k,v,ok)=>`<div class="chk"><span class="c ${ok?'y':'n'}">${ok?IC.check:IC.x}</span><span class="t">${k}<div style="font-size:13px;font-weight:600;color:var(--mut);margin-top:3px">${v}</div></span><span class="r ${ok?'y':'n'}">${ok?'해당 없음':'해당'}</span></div>`;
+  const below=i.trend_pass===false;
+  return `<div class="card" style="border:1px solid ${diff?'rgba(255,181,71,.6)':'var(--line,#243b5a)'}"><div class="eyebrow">${IC.spark}<span>장중 가정 신호 · 참고용</span></div>
+    <p class="txt m" style="margin:8px 0 0">현재가(${kstOf(o.generated_utc).slice(5,16)} KST)를 오늘 종가라고 가정해 같은 규칙으로 계산했습니다. 마감 때 달라질 수 있고, 정식 신호는 아래 카드입니다.</p>
+    <div style="margin:14px 0 4px;color:var(--mut);font-weight:700;font-size:15px">가정 포지션</div>
+    <div class="hero-t ${/매도/.test(g.status)?'sell':'warn'}">${o.target_asset==='CASH'?'':esc(o.target_asset)+' '}${esc(g.status)}</div>
+    <p class="txt m num" style="margin:6px 0 12px;${diff?'color:var(--amber);font-weight:700':''}">${diff?'정식 신호('+esc(stText(SIG.target_asset))+')와 다름':'정식 신호와 같음'} · QQQ ${o.closes.QQQ.toFixed(2)}</p>
+    ${row('급락(crash) 조건','추세 '+(below?'180일선 아래':'위')+' · 252일 고점 대비 '+sp(i.dd252)+' (−15%) · 변동성 '+(i.vol40*100).toFixed(1)+'% (30%)',!i.crash)}
+    <p class="txt m num">핵심 점수 ${i.core_score}/3 · 진입 게이트 ${i.entry_gate_pass?'OPEN':'CLOSED'} · RSI ${i.rsi14.toFixed(1)} · MFI ${i.mfi14.toFixed(1)}</p></div>`;
+}
 function render(){
   const root=$('app');
   if(!SIG){root.innerHTML=head(null)+`<div class="card"><h2 style="margin:0 0 8px;font-size:22px">신호를 불러오지 못했습니다</h2><p class="txt m">${esc(loadErr||'signal.json이 없습니다.')}<br>GitHub Actions가 한 번 실행된 뒤에 표시됩니다. 오른쪽 위 새로고침을 눌러 다시 시도하세요.</p></div>`+foot();bind();return}
@@ -346,7 +361,7 @@ function render(){
     ${['QQQ','QLD','TQQQ'].filter(a=>h[a].n>0).map(a=>`<div class="hold"><span class="dot" style="background:${HEX[a]}"></span><span class="n">${a}</span><span class="q num">${h[a].n.toLocaleString()}주</span><span class="p num" style="color:${h[a].avg>0?sgn(px[a]/h[a].avg-1):'var(--mut)'}">${h[a].avg>0?sp(px[a]/h[a].avg-1):'-'}</span></div>`).join('')}</div>`}
   const fx=s.fx?`<div class="card tap fx" data-etf="FX"><div class="ch"><div><h2>USD / KRW</h2><div class="s">달러 자산의 원화 가치</div></div>${IC.chev.replace('<svg','<svg class="chev"')}</div><div style="margin:14px 0"><span class="v num">₩${Math.round(s.fx.usdkrw).toLocaleString()}</span><span class="d num" style="color:${s.fx.chg>=0?'var(--red)':'var(--cyan)'}">${sp(s.fx.chg)}</span></div>${spark(s.fx.series,'#ffb547',{id:'sgfx',h:90})}</div>`:'';
   const btns=`<div class="btns"><button class="bt o" data-open="order">${IC.receipt}주문</button><button class="bt p" data-open="portfolio">${IC.wallet}포트폴리오</button><button class="bt s" data-open="settings">${IC.gear}계좌설정</button></div>`;
-  root.innerHTML=head(chips)+banners+clock+strat+acc+pulse+cond+indc+port+fx+btns+foot();
+  root.innerHTML=head(chips)+banners+intrCard()+clock+strat+acc+pulse+cond+indc+port+fx+btns+foot();
   bind();
 }
 const head=chips=>`<div class="top"><div class="logo">${IC.logo}</div><div class="grow"><h1>ROBUST V20</h1><div class="sub">Production Freeze 1.0 · Read Only Strategy</div></div><button class="iconbtn ${loading?'spin':''}" id="rf" aria-label="새로고침">${IC.refresh}</button></div>${chips||''}`;
@@ -411,6 +426,7 @@ async function load(manual){
     if(!r.ok)throw new Error('signal.json을 찾지 못했습니다 ('+r.status+')');
     const o=await r.json();if(!valid(o))throw new Error('signal.json 형식이 올바르지 않습니다. daily_signal.py 최신 버전으로 다시 생성하세요.');
     SIG=o;loadErr='';store.set('v20.sigcache',JSON.stringify(o));
+    try{const q=await fetch('signal_intraday.json?'+Date.now(),{cache:'no-store'});INT=q.ok?await q.json():null}catch(_){INT=null}
   }catch(e){
     loadErr=e.message;
     if(!SIG){try{const c=JSON.parse(store.get('v20.sigcache')||'null');if(valid(c)){SIG=c;loadErr='오프라인: 마지막으로 받은 신호를 보여줍니다.'}}catch(x){}}

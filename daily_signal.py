@@ -306,6 +306,28 @@ def build_signal(data, cfg, meta, integrity, cost_bps=5.0, synthetic=False, fx=N
     }
 
 
+def write_intraday(path, live, cfg, meta, integ, cost_bps):
+    """참고용 장중 신호: 미완성 봉(현재가)을 오늘 종가라고 가정하고 같은 엔진으로 계산한다.
+    정식 신호(signal.json)는 건드리지 않고 별도 파일에 쓴다. 장중이 아니면 파일을 지운다."""
+    if live is None:
+        if path.exists():
+            path.unlink()
+        return
+    try:
+        if any(live[k]["Close"].iloc[-1] != live[k]["Close"].iloc[-1] for k in ("QQQ", "QLD", "TQQQ")):
+            raise ValueError("현재가 없음")
+        sg = build_signal(live, cfg, meta, integ, cost_bps, synthetic=False, fx=None)
+        keep = {k: sg[k] for k in ("asof_close", "next_exec_date", "prev_asset", "target_asset", "signal", "guide", "closes", "indicators")}
+        keep.update({"intraday": True, "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                     "note": "장중 현재가를 오늘 종가라고 가정한 참고용 신호입니다. 마감 때 달라질 수 있습니다."})
+        path.write_text(json.dumps(keep, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"[장중 참고] {keep['asof_close']} 현재가 기준: {keep['prev_asset']} -> {keep['target_asset']} ({keep['signal']})", file=sys.stderr)
+    except Exception as e:   # 참고용이므로 실패해도 정식 신호에는 영향 없음
+        if path.exists():
+            path.unlink()
+        print(f"[장중 참고] 생성 실패(무시): {e}", file=sys.stderr)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data-dir"); ap.add_argument("--period", default="max")
@@ -317,10 +339,12 @@ def main():
     a = ap.parse_args()
     cfg, meta, integ = load_frozen(Path(a.config))
     data = E.load_data(a.data_dir, a.period, a.self_test)
+    live = None   # 장중 미완성 봉이 붙어 있으면 참고용 장중 신호에 쓴다
     if not (a.self_test or a.data_dir or a.no_stale_check):
         last, need = data["QQQ"].index[-1].date(), expected_last_session()
         if last > need:   # 장중에 실행하면 오늘의 미완성 봉이 끝에 붙는다 -> 버리고 마지막 마감일 기준으로 계산
             cut = pd.Timestamp(need)
+            live = data
             print(f"[장중] 미완성 봉({last}) 제외, 마지막 마감일 {need} 기준으로 계산합니다.", file=sys.stderr)
             data = {k: df[df.index <= cut] for k, df in data.items()}
             last = data["QQQ"].index[-1].date()
@@ -338,6 +362,7 @@ def main():
     Path(a.out).write_text(json.dumps(sig, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({k: sig[k] for k in ("asof_close", "next_exec_date", "prev_asset", "target_asset", "signal")}, ensure_ascii=False),
           sig["guide"]["status"])
+    write_intraday(Path(a.out).with_name("signal_intraday.json"), live, cfg, meta, integ, a.cost_bps)
     if not (integ["engine_ok"] and integ["config_ok"]):
         print("[WARN] engine/config SHA256 mismatch vs frozen config", file=sys.stderr)
 

@@ -101,13 +101,13 @@ def with_placeholder(data):
     return out
 
 
-def run_full(data, cfg, cost_bps=5.0):
+def run_full(data, cfg, cost_bps=8.0):
     f = E.build_features(with_placeholder(data))
     sr, ex, _ = E.simulate_strategy(cfg, f, cost_bps / 10000.0)
     return f, ex, sr
 
 
-def run(data, cfg, cost_bps=5.0):
+def run(data, cfg, cost_bps=8.0):
     f, ex, _ = run_full(data, cfg, cost_bps)
     return f, ex
 
@@ -238,7 +238,7 @@ def fetch_fx():
         return None
 
 
-def build_signal(data, cfg, meta, integrity, cost_bps=5.0, synthetic=False, fx=None):
+def build_signal(data, cfg, meta, integrity, cost_bps=8.0, synthetic=False, fx=None):
     f, ex, sr = run_full(data, cfg, cost_bps)
     n = len(data["QQQ"])
     i = n - 1
@@ -334,7 +334,7 @@ def main():
     ap.add_argument("--self-test", action="store_true")
     ap.add_argument("--config", default=str(HERE / "v20_frozen_config.json"))
     ap.add_argument("--out", default="signal.json")
-    ap.add_argument("--cost-bps", type=float, default=5.0)
+    ap.add_argument("--cost-bps", type=float, default=8.0)
     ap.add_argument("--no-stale-check", action="store_true", help="시세 신선도 검사 생략 (테스트용)")
     a = ap.parse_args()
     cfg, meta, integ = load_frozen(Path(a.config))

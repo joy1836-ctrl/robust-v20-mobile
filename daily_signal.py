@@ -112,21 +112,35 @@ def run(data, cfg, cost_bps=8.0):
     return f, ex
 
 
-def v20_nav(sr, n, ex, f):
-    """V20 전략 지수(종가 기준, 시작=1.0). 엔진 수익 sr[i]는 i일 시초가 → i+1일 시초가(시초가 체결) 수익이고
-    i일 거래비용이 포함돼 있다. 시초가 가치 op[i]에 i일 비용을 반영하고 그날 시초→종가 수익을 곱해 종가 기준 가치를 만든다."""
+def v20_nav(sr, n, ex, f, cost_bps=8.0):
+    """V20 전략 지수(종가 기준, 시작=1.0). 실제 주문 방식과 같은 체결 규칙을 쓴다.
+    - 현금 → 매수(매도 없음): 시초가 매수 (그날 시초→종가 수익 반영)
+    - 보유 → 현금: 시초가 매도
+    - 자산 갈아타기(매도 있음): 시초가 매도, 종가 매수 (새 자산은 그날 종가부터 보유)
+    한쪽당 비용 cost_bps. 엔진의 상태(ex)는 그대로 쓰고 가치 계산만 이 규칙으로 한다."""
 
-    r = np.nan_to_num(np.asarray(sr, dtype=float)[:n])
+    c = cost_bps / 10000.0
     ex = np.asarray(ex)[:n]
-    op = np.r_[1.0, np.cumprod(1.0 + r)][:n]             # i일 시초가 시점 가치
-    nav = op.copy()
+    O, C = {}, {}
     for k, a in ((1, "QQQ"), (2, "QLD"), (3, "TQQQ")):
-        m = ex == k
-        o2o = np.asarray(f[f"{a}_O2O_RET"], dtype=float)[:n]
-        cost = np.where(m, o2o - r, 0.0)                 # i일 체결 비용(= 자산 수익 − 전략 수익)
-        oc = np.asarray(f[f"{a}_CLOSE"], dtype=float)[:n] / np.asarray(f[f"{a}_OPEN"], dtype=float)[:n]
-        nav = np.where(m, op * (1.0 - cost) * oc, nav)
-    nav = np.where(ex == 0, op * (1.0 + r), nav)          # 현금일: 수익 0, 비용만 반영
+        O[k] = np.asarray(f[f"{a}_OPEN"], dtype=float)[:n]
+        C[k] = np.asarray(f[f"{a}_CLOSE"], dtype=float)[:n]
+    nav = np.empty(n, dtype=float)
+    v = 1.0
+    for i in range(n):
+        cur = int(ex[i])
+        prv = int(ex[i - 1]) if i > 0 else 0
+        if cur == prv:
+            if cur:
+                v *= C[cur][i] / (C[cur][i - 1] if i > 0 else O[cur][i])
+        else:
+            if prv:                                    # 시초가 매도
+                v *= (O[prv][i] / C[prv][i - 1]) * (1.0 - c)
+            if cur:
+                v *= (1.0 - c)                         # 매수 비용
+                if not prv:                            # 현금에서 매수: 시초가 매수
+                    v *= C[cur][i] / O[cur][i]
+        nav[i] = v
     return nav
 
 
@@ -162,9 +176,9 @@ def v20_scaled(nav, dates):
     return nav / nav[chart_start(dates)] * V20_BASE
 
 
-def v20_pulse(sr, n, dates, ex, f, window=252, tail=60):
+def v20_pulse(sr, n, dates, ex, f, window=252, tail=60, cost_bps=8.0):
     """V20 카드용 지표(종가 기준, 5년 전=10 눈금)."""
-    nav = v20_nav(sr, n, ex, f)
+    nav = v20_nav(sr, n, ex, f, cost_bps)
     ds = list(dates)[:n]
     sc = v20_scaled(nav, ds)
     idx = sc[-(window + 1):]                       # nav[k] 는 ds[k] 일자 종가 기준 지수
@@ -273,12 +287,12 @@ def build_signal(data, cfg, meta, integrity, cost_bps=8.0, synthetic=False, fx=N
             if fx and fx.get("ytd_base"):
                 pulse[a]["ytd_krw"] = float((1.0 + y) * (fx["usdkrw"] / fx["ytd_base"]) - 1.0)
     closes = {a: pulse[a]["close"] for a in pulse}
-    pulse["V20"] = v20_pulse(sr, n, data["QQQ"].index, ex, f)
+    pulse["V20"] = v20_pulse(sr, n, data["QQQ"].index, ex, f, cost_bps=cost_bps)
     v = pulse["V20"]
     if fx and fx.get("ytd_base") and v.get("ytd") is not None:   # 원화 기준 = (1+달러수익률) × 환율변화 − 1
         v["ytd_krw"] = float((1.0 + v["ytd"]) * (fx["usdkrw"] / fx["ytd_base"]) - 1.0)
     c0 = chart_start(idx[:n])                  # 기준일 이후 이력. 차트용 장기 이력은 signal.json이 아니라 history.json에 따로 저장
-    vnav = v20_nav(sr, n, ex, f)
+    vnav = v20_nav(sr, n, ex, f, cost_bps)
     chart = {"dates": [d.strftime("%Y-%m-%d") for d in idx[c0:n]]}
     for a in ("QQQ", "QLD", "TQQQ"):
         chart[a] = [round(float(x), 2) for x in np.asarray(f[f"{a}_CLOSE"], dtype=float)[:n][c0:]]

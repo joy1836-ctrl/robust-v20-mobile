@@ -399,6 +399,16 @@ function renderSig(){
   $('hsLeg').innerHTML=stLegend();
 }
 function numv(id){const v=parseFloat($(id).value);return isFinite(v)&&v>=0?v:0}
+function execSteps(orders){
+  if(!orders.length)return '';
+  const sells=orders.filter(o=>o.side==='매도'),buys=orders.filter(o=>o.side==='매수');
+  const L=os=>os.map(o=>`${o.k} ${o.q.toLocaleString()}주`).join(', ');
+  const st=[];
+  if(sells.length)st.push(`<b>개장 시초가에 매도</b> — ${L(sells)}. 한국시간 밤 11:30(서머타임 중 10:30) 개장이라 예약주문을 쓰면 편합니다.`);
+  if(buys.length&&sells.length)st.push(`<b>매도 체결을 확인한 뒤, 같은 날 마감 전에 매수</b> — ${L(buys)}. 시초가에 몰리는 부담을 줄이는 방법입니다.`);
+  else if(buys.length)st.push(`<b>개장 시초가에 매수</b> — ${L(buys)}. 부담되면 같은 날 종가 직전에 사도 됩니다.`);
+  return `<div class="card" style="margin-top:12px;padding:12px 14px"><div style="font-weight:700;margin-bottom:6px">실행 순서</div><ol style="margin:0;padding-left:18px;line-height:1.7">${st.map(x=>`<li>${x}</li>`).join('')}</ol><p class="note" style="margin-top:8px">백테스트(2011~, 수수료 0.08%): 시초가 매도·매수 연 50.7%, 시초가 매도 후 종가 매수 연 49.7% (최대 낙폭 같음), 종가 매도·매수 연 46.4%. 매도 대금을 같은 날 다시 쓸 수 있는지는 증권사에서 확인하세요.</p></div>`;
+}
 function renderPlan(){
   const el=$('plan');
   if(!SIG){el.innerHTML='<p class="note">신호를 먼저 불러오세요.</p>';return}
@@ -425,6 +435,7 @@ function renderPlan(){
     <tr><td>목표 ${tgt}</td><td>${tgt==='CASH'?'전량 현금':tq.toLocaleString()+'주'}</td></tr>
     <tr><td>예상 거래비용</td><td>$${fmt(costs)}</td></tr>
     <tr><td>주문 후 예상 현금</td><td>$${fmt(after)}</td></tr></table></div>
+   ${execSteps(orders)}
    <p class="note" style="margin-top:8px">목표주수 = floor[ 총평가액 × (1 − 현금버퍼) ÷ { 종가 × (1 + 거래비용) } ]. 다음 시가가 크게 움직이면 수량을 다시 계산하세요.</p>`;
 }
 function applySignal(obj,msg){

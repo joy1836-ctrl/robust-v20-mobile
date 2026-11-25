@@ -157,7 +157,8 @@ pre{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:
   <div class="card"><h2>연도별 수익률</h2>
     <div class="legend"><span><i style="background:var(--s1)"></i>ROBUST V20</span><span><i style="background:var(--s2)"></i>TQQQ B&amp;H</span></div>
     <div class="cv"><canvas id="cyChart"></canvas></div>
-    <p class="note" style="margin-top:8px" id="calNote"></p></div>
+    <p class="note" style="margin-top:8px" id="calNote"></p>
+    <p class="note" style="margin-top:4px" id="calNote2"></p></div>
   <div class="card"><h2>연도별 상세</h2><div class="tablewrap"><table id="calTbl"></table></div></div>
 </section>
 
@@ -364,7 +365,14 @@ function renderYear(){
   mkChart('cyChart',{kind:'bar',n:L.length,series:[{v:D.cal.map(r=>r.r),color:css('--s1')},{v:D.cal.map(r=>r.t),color:css('--s2')}],xticks:L.map((l,i)=>({i,label:l})),yfmt:v=>(v*100).toFixed(0)+'%',
     tip:i=>{const r=D.cal[i];return `<div style="font-family:var(--mono);color:var(--ink2);margin-bottom:4px">${r.y}</div><div><span style="color:var(--ink2)">ROBUST</span> <b style="font-family:var(--mono)">${spct(r.r)}</b> · MDD ${pct(r.rm)}</div><div><span style="color:var(--ink2)">TQQQ</span> <b style="font-family:var(--mono)">${spct(r.t)}</b> · MDD ${pct(r.tm)}</div>`}});
   $('calTbl').innerHTML='<tr><th>연도</th><th>거래일</th><th>ROBUST 수익률</th><th>TQQQ 수익률</th><th>초과</th><th>ROBUST MDD</th><th>TQQQ MDD</th></tr>'+D.cal.map(r=>
-    `<tr><td>${r.y}</td><td>${r.days}</td><td class="${cls(r.r)}">${spct(r.r)}</td><td class="${cls(r.t)}">${spct(r.t)}</td><td class="${Math.abs(r.r-r.t)<1e-9?'':cls(r.r-r.t)}">${Math.abs(r.r-r.t)<1e-9?'동일':spct(r.r-r.t)}</td><td>${pct(r.rm)}</td><td>${pct(r.tm)}</td></tr>`).join('');
+    `<tr><td>${r.y}</td><td>${r.days}</td><td class="${cls(r.r)}">${spct(r.r)}</td><td class="${cls(r.t)}">${spct(r.t)}</td><td class="${Math.abs(r.r-r.t)<1e-9?'':cls(r.r-r.t)}">${Math.abs(r.r-r.t)<1e-9?'동일':spct(r.r-r.t)}</td><td>${pct(r.rm)}</td><td>${pct(r.tm)}</td></tr>`).join('')+(()=>{
+    const full=D.cal.filter(r=>r.days>=240),av=a=>a.reduce((x,y)=>x+y,0)/a.length;if(!full.length)return '';
+    const md=a=>{const b=a.slice().sort((x,y)=>x-y),m=b.length>>1;return b.length%2?b[m]:(b[m-1]+b[m])/2};
+    const row=(lab,fn)=>`<tr style="font-weight:700;background:rgba(255,255,255,.04)"><td colspan="2">${lab}</td><td class="${cls(fn(full.map(r=>r.r)))}">${spct(fn(full.map(r=>r.r)))}</td><td class="${cls(fn(full.map(r=>r.t)))}">${spct(fn(full.map(r=>r.t)))}</td><td class="${cls(fn(full.map(r=>r.r-r.t)))}">${spct(fn(full.map(r=>r.r-r.t)))}</td><td>${pct(fn(full.map(r=>r.rm)))}</td><td>${pct(fn(full.map(r=>r.tm)))}</td></tr>`;
+    const f=D.full,c=`<tr style="font-weight:800;background:rgba(34,211,238,.10)"><td colspan="2">연평균 수익률<br><span style="font-weight:500;font-size:11.5px">복리(CAGR)·전체 ${D.start.slice(0,4)}~${D.end.slice(0,4)}</span></td><td class="${cls(f.CAGR.r)}">${spct(f.CAGR.r)}</td><td class="${cls(f.CAGR.t)}">${spct(f.CAGR.t)}</td><td class="${cls(f.CAGR.r-f.CAGR.t)}">${spct(f.CAGR.r-f.CAGR.t)}</td><td>${pct(f.MDD.r)}</td><td>${pct(f.MDD.t)}</td></tr>`;
+    return c+row(`단순 평균 (${full.length}개 온전한 연도)`,av)+row('중앙값',md);
+  })();
+  $('calNote2').textContent='평균은 거래일 240일 이상인 온전한 연도만 단순 산술평균한 값입니다(연도별 수익률의 평균, 낙폭 열은 연중 최대낙폭의 평균). 연평균 수익률(CAGR)은 전체 기간을 복리로 환산한 값이고, 마지막 열의 낙폭은 전체 기간 최대낙폭입니다.';
 }
 
 /* ---------- signal & order plan ---------- */

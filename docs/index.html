@@ -128,6 +128,10 @@ svg.spark{display:block;width:100%;height:auto;overflow:visible}
 .banner{border-radius:18px;padding:12px 16px;font-size:14px;font-weight:500}
 .banner.w{background:rgba(255,181,71,.12);color:var(--amber);border:1px solid #7d5a1f}
 .banner.r{background:rgba(255,92,122,.12);color:var(--red);border:1px solid #7d2c40}
+select,input[type=date]{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:14px;color:var(--tx);font:inherit;font-size:16px;padding:12px 10px;min-width:0}
+.updb{display:flex;justify-content:space-between;align-items:center;gap:10px;border-radius:18px;padding:12px 14px;background:linear-gradient(90deg,#0f3b5c,#14506e);border:1px solid var(--cyan)}
+.updb b{font-size:15px}.updb small{display:block;color:#bfe9f5;font-weight:500;font-size:12.5px}.updb button{border:0;border-radius:12px;padding:9px 14px;font-weight:900;background:var(--cyan);color:#04202a;flex:none}
+.fdel{border:0;background:none;color:var(--dim);font-size:20px;padding:4px 8px}
 /* sheet */
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:none;align-items:flex-end;justify-content:center}
 .ov.on{display:flex}
@@ -166,7 +170,8 @@ const pxf=(a,m)=>m.kind==='index'?Number(m.close).toLocaleString('en-US',{minimu
 const usd=(x,d=2)=>'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 const sp=(x,d=2)=>(x>=0?'+':'')+(x*100).toFixed(d)+'%';
 const sgn=x=>x>=0?'var(--green)':'var(--red)';
-const BUF=0.005,FEE=0.0005;
+const APP_VER='2026.11.25-a';
+const BUF=0.015,FEE=0.0005;
 const krw=x=>(SIG&&SIG.fx&&SIG.fx.usdkrw)?(x<0?'-':'')+'₩'+Math.round(Math.abs(x)*SIG.fx.usdkrw).toLocaleString('ko-KR'):'';
 const wonL=x=>{const t=krw(x);return t?`<span class="won num">${t}</span>`:''};
 const IC={
@@ -302,6 +307,29 @@ function plan(){
 /* ---------- render ---------- */
 function statusClass(){const s=SIG.guide.status;return /매도/.test(s)?'sell':/대기|유지|현금/.test(s)?(/대기/.test(s)?'warn':'ok'):''}
 function pillFor(t){return /매수 대기/.test(t)?'wait':/매도/.test(t)?'sell':/보유 유지/.test(t)?'keep':'buy'}
+/* ---------- 체결 기록 ---------- */
+const fills=()=>{try{const a=JSON.parse(store.get('v20.fills')||'[]');return Array.isArray(a)?a:[]}catch(_){return[]}};
+const usdS=x=>(x<0?'−':'+')+usd(Math.abs(x));
+const slipOf=f=>f.side==='매수'?f.ref/f.px-1:f.px/f.ref-1;   // +유리 / −불리 (내 입장)
+function slipSum(){const a=fills();let amt=0,val=0;for(const f of a){const v=f.px*f.qty;amt+=slipOf(f)*v;val+=v}return{n:a.length,usd:amt,pct:val>0?amt/val:0}}
+function fillsCard(){
+  const m=slipSum();
+  return `<button class="card tap" data-open="fills" style="text-align:left;color:inherit;width:100%"><div class="ch"><div><h2>체결 기록</h2><div class="s">실제 체결가와 가정 체결가의 차이(슬리피지)</div></div></div>
+  <p class="txt num" style="margin:10px 0 0">${m.n?`${m.n}건 · 평균 <b style="color:${sgn(m.pct)}">${sp(m.pct)}</b> · 누적 <b style="color:${sgn(m.usd)}">${usdS(m.usd)}</b>`:'아직 기록이 없습니다. 주문 후 체결가를 입력하세요.'}</p></button>`;
+}
+let HISTC=null;
+async function getHist(){if(HISTC)return HISTC;try{const r=await fetch('history.json',{cache:'no-store'});if(r.ok)HISTC=await r.json()}catch(_){}return HISTC}
+/* ---------- 새 버전 확인 ---------- */
+let NEWVER='';
+async function checkVer(){
+  try{const r=await fetch('index.html?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const t=await r.text();const m=t.match(/const APP_VER='([^']+)'/);
+    if(m&&m[1]!==APP_VER){NEWVER=m[1];render()}}catch(_){}
+}
+async function doUpdate(){
+  try{const rs=await navigator.serviceWorker.getRegistrations();for(const r of rs)await r.unregister()}catch(_){}
+  try{for(const k of await caches.keys())await caches.delete(k)}catch(_){}
+  location.reload();
+}
 function intrCard(){
   const o=INT;if(!o||!o.intraday||!SIG)return '';
   if(!(o.asof_close>SIG.asof_close)||Date.now()-Date.parse(o.generated_utc)>14*3600e3)return '';
@@ -361,14 +389,16 @@ function render(){
     ${['QQQ','QLD','TQQQ'].filter(a=>h[a].n>0).map(a=>`<div class="hold"><span class="dot" style="background:${HEX[a]}"></span><span class="n">${a}</span><span class="q num">${h[a].n.toLocaleString()}주</span><span class="p num" style="color:${h[a].avg>0?sgn(px[a]/h[a].avg-1):'var(--mut)'}">${h[a].avg>0?sp(px[a]/h[a].avg-1):'-'}</span></div>`).join('')}</div>`}
   const fx=s.fx?`<div class="card tap fx" data-etf="FX"><div class="ch"><div><h2>USD / KRW</h2><div class="s">달러 자산의 원화 가치</div></div>${IC.chev.replace('<svg','<svg class="chev"')}</div><div style="margin:14px 0"><span class="v num">₩${Math.round(s.fx.usdkrw).toLocaleString()}</span><span class="d num" style="color:${s.fx.chg>=0?'var(--red)':'var(--cyan)'}">${sp(s.fx.chg)}</span></div>${spark(s.fx.series,'#ffb547',{id:'sgfx',h:90})}</div>`:'';
   const btns=`<div class="btns"><button class="bt o" data-open="order">${IC.receipt}주문</button><button class="bt p" data-open="portfolio">${IC.wallet}포트폴리오</button><button class="bt s" data-open="settings">${IC.gear}계좌설정</button></div>`;
-  root.innerHTML=head(chips)+banners+intrCard()+clock+strat+acc+pulse+cond+indc+port+fx+btns+foot();
+  const upd=NEWVER?`<div class="updb"><div><b>새 버전이 있습니다</b><small>${APP_VER} → ${esc(NEWVER)}</small></div><button id="doUpd">업데이트</button></div>`:'';
+  root.innerHTML=head(chips)+upd+banners+intrCard()+clock+strat+acc+pulse+cond+indc+port+fx+fillsCard()+btns+foot();
   bind();
 }
 const head=chips=>`<div class="top"><div class="logo">${IC.logo}</div><div class="grow"><h1>ROBUST V20</h1><div class="sub">Production Freeze 1.0 · Read Only Strategy</div></div><button class="iconbtn ${loading?'spin':''}" id="rf" aria-label="새로고침">${IC.refresh}</button></div>${chips||''}`;
-const foot=()=>`<div class="foot">${IC.shield}<div class="a">ROBUST V20 · Frozen Engine · Read-only Dashboard</div><div class="b">실제 주문 전 다음 시가·수수료·계좌상태를 반드시 확인하세요.<br>이 앱은 신호와 주문계획만 계산하며 자동 주문을 하지 않습니다.</div><a href="backtest.html">백테스트 성과 보기</a></div>`;
+const foot=()=>`<div class="foot">${IC.shield}<div class="a">ROBUST V20 · Frozen Engine · Read-only Dashboard</div><div class="b">앱 버전 ${APP_VER}</div><div class="b">실제 주문 전 다음 시가·수수료·계좌상태를 반드시 확인하세요.<br>이 앱은 신호와 주문계획만 계산하며 자동 주문을 하지 않습니다.</div><a href="backtest.html">백테스트 성과 보기</a></div>`;
 function bind(){
   const r=$('rf');if(r)r.onclick=()=>load(true);
   document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openSheet(b.dataset.open));
+  const du=$('doUpd');if(du)du.onclick=doUpdate;
   document.querySelectorAll('[data-etf]').forEach(b=>b.onclick=()=>openSheet('etf:'+b.dataset.etf));
 }
 setInterval(()=>{const a=$('clk'),b=$('clk2');if(a){const t=kstNow();a.textContent=t;b.textContent=t}},1000);
@@ -389,7 +419,19 @@ function openSheet(kind){
     else{const px=SIG.closes;h+=`<p class="txt m">신호 ${SIG.signal} · ${SIG.asof_close} 종가 기준 → ${SIG.next_exec_date} 시가 실행</p>`+
       (p.orders.length?p.orders.map(o=>`<div class="ord"><span class="tag ${o.side==='매수'?'b':'s'}">${o.side}</span><span class="n" style="color:${COL[o.a]}">${o.a}</span><span class="q num">${o.q.toLocaleString()}주<small>${usd(o.p)} · ${usd(o.q*o.p)}</small></span></div>`).join(''):'<p class="txt">입력 잔고 기준 주문안 없음</p>')+
       `<table class="t num"><tr><td>총 평가액</td><td>${usd(p.total)}</td></tr><tr><td>현금</td><td>${usd(p.cash)}</td></tr><tr><td>예상 잔여</td><td>${usd(p.left)}</td></tr></table>
-      <p class="txt m">목표주수 = floor[ 총평가액 × (1 − 0.5%) ÷ {종가 × (1 + 0.05%)} ]. 새 전략 전환이 있을 때만 목표 수량을 맞추고, HOLD일에는 비목표 자산 매도 안내만 유지합니다. 실제 시가가 크게 움직이면 수량을 다시 계산하세요.</p>`}
+      <p class="txt m">목표주수 = floor[ 총평가액 × (1 − 1.5%) ÷ {종가 × (1 + 0.05%)} ]. 새 전략 전환이 있을 때만 목표 수량을 맞추고, HOLD일에는 비목표 자산 매도 안내만 유지합니다. 실제 시가가 크게 움직이면 수량을 다시 계산하세요.</p>`}
+  }else if(kind==='fills'){
+    const a=fills(),m=slipSum(),today=new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
+    h+=`<h2>체결 기록</h2><p class="txt m">가정가 대비 체결가 차이입니다. 매수는 가정가보다 비싸게, 매도는 싸게 체결되면 불리(−)입니다. 이 휴대폰 안에만 저장됩니다.</p>`+
+    (m.n?`<table class="t num"><tr><td>기록 건수</td><td>${m.n}건</td></tr><tr><td>평균 슬리피지(금액 가중)</td><td style="color:${sgn(m.pct)}">${sp(m.pct)}</td></tr><tr><td>누적 슬리피지 금액</td><td style="color:${sgn(m.usd)}">${usdS(m.usd)}</td></tr></table>`:'')+
+    a.slice().reverse().map(f=>`<div class="ord"><span class="tag ${f.side==='매수'?'b':'s'}">${f.side}</span><span class="n" style="color:${COL[f.a]}">${f.a}<small style="display:block;color:var(--mut);font-weight:500;font-size:12.5px">${f.date} · ${f.kind} 기준 ${usd(f.ref)}</small></span><span class="q num">${usd(f.px)}<small style="color:${sgn(slipOf(f))}">${sp(slipOf(f))} · ${f.qty}주</small></span><button class="fdel" data-fdel="${f.id}" aria-label="삭제">×</button></div>`).join('')+
+    `<h3 style="margin:18px 0 4px">체결 입력</h3>
+    <div class="field"><div><label for="x_d">날짜</label><input type="date" id="x_d" value="${today}"></div><div><label for="x_a">종목</label><select id="x_a"><option>QQQ</option><option>QLD</option><option selected>TQQQ</option></select></div></div>
+    <div class="field"><div><label for="x_s">구분</label><select id="x_s"><option>매수</option><option>매도</option></select></div><div><label for="x_k">가정가 기준</label><select id="x_k"><option>종가</option><option>시초가</option></select></div></div>
+    <div class="field"><div><label for="x_r">가정가 ($)</label><input type="number" id="x_r" inputmode="decimal" step="0.01" min="0"></div><div><label for="x_p">체결가 ($)</label><input type="number" id="x_p" inputmode="decimal" step="0.01" min="0"></div></div>
+    <div class="field"><div><label for="x_q">수량(주)</label><input type="number" id="x_q" inputmode="numeric" step="1" min="1"></div><div></div></div>
+    <p class="txt m" id="x_h">종가 기준은 가정가를 자동으로 채웁니다. 시초가 기준은 증권사 화면의 그날 시초가를 직접 입력하세요.</p>
+    <div class="row2"><button class="btn" id="x_add">기록 추가</button></div>`;
   }else if(kind==='portfolio'){
     const p=plan();h+=`<h2>포트폴리오</h2>`;
     if(!p)h+='<p class="txt m">계좌설정에서 잔고를 먼저 입력하세요.</p>';
@@ -405,6 +447,15 @@ function openSheet(kind){
   if(kind.startsWith('etf:')){const a=kind.slice(4);const m=a==='FX'?SIG.fx:(SIG.pulse&&SIG.pulse[a]);if(m){if(m.dates)scrub(sh.querySelector('svg.spark'),m,a==='FX'?(v=>'₩'+Number(v).toLocaleString('ko-KR',{minimumFractionDigits:2,maximumFractionDigits:2})):(m.kind==='index'?(v=>Number(v).toFixed(2)):usd),a==='FX'?'#ffb547':HEX[a]);initChart(a)}}
   $('sx').onclick=closeSheet;
   sh.querySelectorAll('[data-open2]').forEach(b=>b.onclick=()=>openSheet(b.dataset.open2));
+  if(kind==='fills'){
+    const fill=async()=>{if($('x_k').value!=='종가')return;const H=await getHist();if(!H||!H.dates)return;const i=H.dates.indexOf($('x_d').value),a=$('x_a').value;
+      if(i>=0&&H[a]&&H[a][i]!=null)$('x_r').value=Number(H[a][i]).toFixed(2);else $('x_h').textContent='그날 종가를 찾지 못했습니다. 직접 입력하세요.'};
+    ['x_d','x_a','x_k'].forEach(id=>$(id).onchange=fill);fill();
+    $('x_add').onclick=()=>{const n=id=>parseFloat($(id).value),f={id:Date.now(),date:$('x_d').value,a:$('x_a').value,side:$('x_s').value,kind:$('x_k').value,ref:n('x_r'),px:n('x_p'),qty:Math.floor(n('x_q'))};
+      if(!f.date||!(f.ref>0)||!(f.px>0)||!(f.qty>0)){$('x_h').textContent='가정가·체결가·수량을 모두 입력하세요.';return}
+      store.set('v20.fills',JSON.stringify(fills().concat([f])));openSheet('fills');render()};
+    sh.querySelectorAll('[data-fdel]').forEach(b=>b.onclick=()=>{store.set('v20.fills',JSON.stringify(fills().filter(f=>String(f.id)!==b.dataset.fdel)));openSheet('fills');render()});
+  }
   if(kind==='settings'){
     $('f_save').onclick=()=>{const n=id=>{const v=parseFloat($(id).value);return isFinite(v)&&v>=0?v:0};
       const o={cash:n('f_cash'),updated:new Date().toISOString(),};for(const k of ['QQQ','QLD','TQQQ'])o[k]={n:Math.floor(n('f_'+k+'n')),avg:n('f_'+k+'a')};
@@ -434,7 +485,8 @@ async function load(manual){
   loading=false;render();
 }
 loadAcc();render();load(false);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(false)});
+checkVer();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){load(false);checkVer()}});
 if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>

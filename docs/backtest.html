@@ -105,7 +105,7 @@ pre{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:
 
 <div class="wrap">
 <header>
-  <div><h1>ROBUST V20 대시보드</h1><div class="sub">Production Freeze 1.0 · V20_SHADOW_COMBO · 종가 신호 → 다음 거래일 시가 체결</div></div>
+  <div><h1>ROBUST V20 대시보드</h1><div class="sub">Production Freeze 1.0 · V20_SHADOW_COMBO · 종가 신호 → 다음 거래일 체결(갈아탈 때 시가 매도·종가 매수)</div></div>
   <div class="tag" id="meta"></div>
 </header>
 <nav role="tablist" aria-label="화면">
@@ -129,7 +129,7 @@ pre{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:
   </div>
   <div class="grid2">
     <div class="card"><h2>보유 상태별 시간 비중</h2><div class="bar" id="expBar"></div><div class="exp" id="expLeg"></div>
-      <p class="note" style="margin-top:10px">전체 기간 중 약 87%를 TQQQ로 보유했습니다. 나머지는 방어(CASH)와 단계 전환 구간입니다.</p></div>
+      <p class="note" style="margin-top:10px">전체 기간 중 약 <span id="tqPct"></span>를 TQQQ로 보유했습니다. 나머지는 방어(CASH)와 단계 전환 구간입니다.</p></div>
     <div class="card"><h2>매매 빈도</h2><div class="tablewrap"><table id="actTbl"></table></div>
       <p class="note" style="margin-top:10px">매수·매도 한 건은 ETF 한 종목의 주문 1회입니다. 스위칭은 QQQ/QLD/TQQQ 사이의 직접 교체입니다.</p></div>
   </div>
@@ -157,7 +157,7 @@ pre{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:
   <div class="card"><h2>연도별 수익률</h2>
     <div class="legend"><span><i style="background:var(--s1)"></i>ROBUST V20</span><span><i style="background:var(--s2)"></i>TQQQ B&amp;H</span></div>
     <div class="cv"><canvas id="cyChart"></canvas></div>
-    <p class="note" style="margin-top:8px">2011년은 8월 23일부터, 2026년은 9월 4일까지의 부분 연도입니다.</p></div>
+    <p class="note" style="margin-top:8px" id="calNote"></p></div>
   <div class="card"><h2>연도별 상세</h2><div class="tablewrap"><table id="calTbl"></table></div></div>
 </section>
 
@@ -476,7 +476,9 @@ IDS.forEach(id=>$(id).addEventListener('input',()=>{store.set('v20.in.'+id,$(id)
 /* ---------- boot ---------- */
 function renderAll(){renderPerf();renderRoll();renderYear();renderSig()}
 $('meta').textContent=`백테스트 ${D.start} ~ ${D.end} · 비용 ${(D.cost*100).toFixed(2)}%/편도`;
-$('foot').textContent=`성과 수치는 2026-09-04 기준 15년 고정 백테스트(3,780거래일, 실제 TQQQ 이력)이며 과거 결과입니다. 레버리지 ETF는 큰 손실이 날 수 있습니다. ROBUST V20 매수·매도 전략 설명서(Production Freeze 1.0) 기준.`;
+$('tqPct').textContent=pct(D.exposure.tqqq,0);
+{const md=x=>{const a=x.split('-');return +a[1]+'월 '+ +a[2]+'일'};$('calNote').textContent=`${D.start.slice(0,4)}년은 ${md(D.start)}부터, ${D.end.slice(0,4)}년은 ${md(D.end)}까지의 부분 연도입니다.`}
+$('foot').textContent=`성과 수치는 ${D.end} 기준 최근 15년(3,780거래일, 실제 TQQQ 이력) 백테스트이며 매일 갱신됩니다. 과거 결과입니다. 레버리지 ETF는 큰 손실이 날 수 있습니다. ROBUST V20 매수·매도 전략 설명서(Production Freeze 1.0) 기준.`;
 IDS.forEach(id=>{const v=store.get('v20.in.'+id);if(v!==null)$(id).value=v});
 renderAll();
 try{const s=store.get('v20.sig');if(s){const o=JSON.parse(s);if(!o._sample)applySignal(o,'이전에 불러온 신호를 복원했습니다.');else{renderSig();renderPlan()}}else{renderSig();renderPlan()}}catch(e){renderSig();renderPlan()}

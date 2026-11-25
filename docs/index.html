@@ -170,7 +170,7 @@ const pxf=(a,m)=>m.kind==='index'?Number(m.close).toLocaleString('en-US',{minimu
 const usd=(x,d=2)=>'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 const sp=(x,d=2)=>(x>=0?'+':'')+(x*100).toFixed(d)+'%';
 const sgn=x=>x>=0?'var(--green)':'var(--red)';
-const APP_VER='2026.11.25-b';
+const APP_VER='2026.11.25-c';
 const BUF=0.015,FEE=0.0005;
 const krw=x=>(SIG&&SIG.fx&&SIG.fx.usdkrw)?(x<0?'-':'')+'₩'+Math.round(Math.abs(x)*SIG.fx.usdkrw).toLocaleString('ko-KR'):'';
 const wonL=x=>{const t=krw(x);return t?`<span class="won num">${t}</span>`:''};
@@ -450,8 +450,10 @@ function openSheet(kind,pre){
   if(kind==='order'){const pp=plan();if(pp)sh.querySelectorAll('[data-fillo]').forEach(b=>b.onclick=()=>{const o=pp.orders[+b.dataset.fillo],sw=pp.orders.some(x=>x.side==='매도');
       openSheet('fills',{date:SIG.next_exec_date,a:o.a,side:o.side,qty:o.q,kind:(o.side==='매도'||!sw)?'시초가':'종가'})})}
   if(kind==='fills'){
-    const fill=async()=>{if($('x_k').value!=='종가')return;const H=await getHist();if(!H||!H.dates)return;const i=H.dates.indexOf($('x_d').value),a=$('x_a').value;
-      if(i>=0&&H[a]&&H[a][i]!=null)$('x_r').value=Number(H[a][i]).toFixed(2);else $('x_h').textContent='그날 종가는 마감 후 데이터가 갱신돼야 자동으로 채워집니다. 지금은 증권사 화면의 값을 직접 입력하세요.'};
+    const fill=async()=>{const H=await getHist();if(!H||!H.dates)return;const i=H.dates.indexOf($('x_d').value),a=$('x_a').value,op=$('x_k').value==='시초가';
+      const src=op?(H.open&&H.open[a]):H[a];
+      if(i>=0&&src&&src[i]!=null){$('x_r').value=Number(src[i]).toFixed(2);$('x_h').textContent=(op?'시초가':'종가')+' 가정가를 자동으로 채웠습니다. 체결가와 수량만 확인하세요. (배당 보정 가격이라 증권사 화면과 몇 센트 다를 수 있습니다)'}
+      else $('x_h').textContent='그날 '+(op?'시초가':'종가')+'는 마감 후 데이터가 갱신돼야 자동으로 채워집니다. 지금은 증권사 화면의 값을 직접 입력하세요.'};
     ['x_d','x_a','x_k'].forEach(id=>$(id).onchange=fill);fill();
     $('x_add').onclick=()=>{const n=id=>parseFloat($(id).value),f={id:Date.now(),date:$('x_d').value,a:$('x_a').value,side:$('x_s').value,kind:$('x_k').value,ref:n('x_r'),px:n('x_p'),qty:Math.floor(n('x_q'))};
       if(!f.date||!(f.ref>0)||!(f.px>0)||!(f.qty>0)){$('x_h').textContent='가정가·체결가·수량을 모두 입력하세요.';return}

@@ -297,6 +297,7 @@ def build_signal(data, cfg, meta, integrity, cost_bps=8.0, synthetic=False, fx=N
     for a in ("QQQ", "QLD", "TQQQ"):
         chart[a] = [round(float(x), 2) for x in np.asarray(f[f"{a}_CLOSE"], dtype=float)[:n][c0:]]
     chart["V20"] = [round(float(x), 3) for x in v20_scaled(vnav, idx[:n])[c0:]]
+    chart["open"] = {a: [round(float(x), 2) for x in np.asarray(f[f"{a}_OPEN"], dtype=float)[:n][c0:]] for a in ("QQQ", "QLD", "TQQQ")}   # 체결 기록의 시초가 가정가용
     return {
         "strategy": meta["strategy_name"], "freeze_date": meta["freeze_date"],
         "integrity": {**integrity, "synthetic_data": synthetic},

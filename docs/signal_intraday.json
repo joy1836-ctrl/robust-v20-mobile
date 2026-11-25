@@ -1,0 +1,43 @@
+{
+  "asof_close": "2026-11-25",
+  "next_exec_date": "2026-11-27",
+  "prev_asset": "CASH",
+  "target_asset": "CASH",
+  "signal": "HOLD",
+  "guide": {
+    "status": "현금 유지",
+    "assets": {
+      "QQQ": "보유 시 매도 (현금 전환)",
+      "QLD": "보유 시 매도 (현금 전환)",
+      "TQQQ": "보유 시 매도 (현금 전환)"
+    },
+    "note": "",
+    "fresh": false,
+    "gate_closed": true
+  },
+  "closes": {
+    "QQQ": 633.9299926757812,
+    "QLD": 68.1500015258789,
+    "TQQQ": 45.279998779296875
+  },
+  "indicators": {
+    "core_score": 0,
+    "trend_pass": false,
+    "mom_pass": false,
+    "vol_pass": false,
+    "sma180": 691.2229275173611,
+    "roc120": -0.09895904497705432,
+    "roc5": -0.038786397038817255,
+    "vol40": 0.3576992390049968,
+    "dd252": -0.1655082338329663,
+    "rsi14": 38.58845954197079,
+    "mfi14": 27.21595046506482,
+    "atr_pct14": 0.0339773927698411,
+    "entry_gate_pass": false,
+    "crash": true,
+    "fast_reentry_ready": false
+  },
+  "intraday": true,
+  "generated_utc": "2026-11-25T21:22:27Z",
+  "note": "장중 현재가를 오늘 종가라고 가정한 참고용 신호입니다. 마감 때 달라질 수 있습니다."
+}

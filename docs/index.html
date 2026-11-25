@@ -170,7 +170,7 @@ const pxf=(a,m)=>m.kind==='index'?Number(m.close).toLocaleString('en-US',{minimu
 const usd=(x,d=2)=>'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 const sp=(x,d=2)=>(x>=0?'+':'')+(x*100).toFixed(d)+'%';
 const sgn=x=>x>=0?'var(--green)':'var(--red)';
-const APP_VER='2026.11.25-a';
+const APP_VER='2026.11.25-b';
 const BUF=0.015,FEE=0.0005;
 const krw=x=>(SIG&&SIG.fx&&SIG.fx.usdkrw)?(x<0?'-':'')+'₩'+Math.round(Math.abs(x)*SIG.fx.usdkrw).toLocaleString('ko-KR'):'';
 const wonL=x=>{const t=krw(x);return t?`<span class="won num">${t}</span>`:''};
@@ -404,7 +404,7 @@ function bind(){
 setInterval(()=>{const a=$('clk'),b=$('clk2');if(a){const t=kstNow();a.textContent=t;b.textContent=t}},1000);
 
 /* ---------- sheets ---------- */
-function openSheet(kind){
+function openSheet(kind,pre){
   const sh=$('sheet');let h='<button class="iconbtn x" id="sx" aria-label="닫기">'+IC.x+'</button>';
   if(kind==='settings'){
     const a=ACC||{cash:0},g=(k,f)=>a[k]&&a[k][f]!=null?a[k][f]:'';
@@ -417,20 +417,20 @@ function openSheet(kind){
     if(!SIG)h+='<p class="txt m">신호가 없습니다.</p>';
     else if(!p)h+='<p class="txt m">계좌설정에서 잔고를 먼저 입력하세요.</p><div class="row2"><button class="btn" data-open2="settings">계좌 입력하기</button></div>';
     else{const px=SIG.closes;h+=`<p class="txt m">신호 ${SIG.signal} · ${SIG.asof_close} 종가 기준 → ${SIG.next_exec_date} 시가 실행</p>`+
-      (p.orders.length?p.orders.map(o=>`<div class="ord"><span class="tag ${o.side==='매수'?'b':'s'}">${o.side}</span><span class="n" style="color:${COL[o.a]}">${o.a}</span><span class="q num">${o.q.toLocaleString()}주<small>${usd(o.p)} · ${usd(o.q*o.p)}</small></span></div>`).join(''):'<p class="txt">입력 잔고 기준 주문안 없음</p>')+
+      (p.orders.length?p.orders.map((o,i)=>`<div class="ord"><span class="tag ${o.side==='매수'?'b':'s'}">${o.side}</span><span class="n" style="color:${COL[o.a]}">${o.a}</span><span class="q num">${o.q.toLocaleString()}주<small>${usd(o.p)} · ${usd(o.q*o.p)}</small></span><button class="btn g" style="padding:8px 10px;font-size:13px;margin-left:6px" data-fillo="${i}">체결 입력</button></div>`).join(''):'<p class="txt">입력 잔고 기준 주문안 없음</p>')+
       `<table class="t num"><tr><td>총 평가액</td><td>${usd(p.total)}</td></tr><tr><td>현금</td><td>${usd(p.cash)}</td></tr><tr><td>예상 잔여</td><td>${usd(p.left)}</td></tr></table>
       <p class="txt m">목표주수 = floor[ 총평가액 × (1 − 1.5%) ÷ {종가 × (1 + 0.05%)} ]. 새 전략 전환이 있을 때만 목표 수량을 맞추고, HOLD일에는 비목표 자산 매도 안내만 유지합니다. 실제 시가가 크게 움직이면 수량을 다시 계산하세요.</p>`}
   }else if(kind==='fills'){
-    const a=fills(),m=slipSum(),today=new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
+    const pr=pre||{},a=fills(),m=slipSum(),today=new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
     h+=`<h2>체결 기록</h2><p class="txt m">가정가 대비 체결가 차이입니다. 매수는 가정가보다 비싸게, 매도는 싸게 체결되면 불리(−)입니다. 이 휴대폰 안에만 저장됩니다.</p>`+
     (m.n?`<table class="t num"><tr><td>기록 건수</td><td>${m.n}건</td></tr><tr><td>평균 슬리피지(금액 가중)</td><td style="color:${sgn(m.pct)}">${sp(m.pct)}</td></tr><tr><td>누적 슬리피지 금액</td><td style="color:${sgn(m.usd)}">${usdS(m.usd)}</td></tr></table>`:'')+
     a.slice().reverse().map(f=>`<div class="ord"><span class="tag ${f.side==='매수'?'b':'s'}">${f.side}</span><span class="n" style="color:${COL[f.a]}">${f.a}<small style="display:block;color:var(--mut);font-weight:500;font-size:12.5px">${f.date} · ${f.kind} 기준 ${usd(f.ref)}</small></span><span class="q num">${usd(f.px)}<small style="color:${sgn(slipOf(f))}">${sp(slipOf(f))} · ${f.qty}주</small></span><button class="fdel" data-fdel="${f.id}" aria-label="삭제">×</button></div>`).join('')+
     `<h3 style="margin:18px 0 4px">체결 입력</h3>
-    <div class="field"><div><label for="x_d">날짜</label><input type="date" id="x_d" value="${today}"></div><div><label for="x_a">종목</label><select id="x_a"><option>QQQ</option><option>QLD</option><option selected>TQQQ</option></select></div></div>
-    <div class="field"><div><label for="x_s">구분</label><select id="x_s"><option>매수</option><option>매도</option></select></div><div><label for="x_k">가정가 기준</label><select id="x_k"><option>종가</option><option>시초가</option></select></div></div>
+    <div class="field"><div><label for="x_d">날짜</label><input type="date" id="x_d" value="${pr.date||today}"></div><div><label for="x_a">종목</label><select id="x_a">${['QQQ','QLD','TQQQ'].map(k=>`<option${k===(pr.a||'TQQQ')?' selected':''}>${k}</option>`).join('')}</select></div></div>
+    <div class="field"><div><label for="x_s">구분</label><select id="x_s">${['매수','매도'].map(k=>`<option${k===(pr.side||'매수')?' selected':''}>${k}</option>`).join('')}</select></div><div><label for="x_k">가정가 기준</label><select id="x_k">${['종가','시초가'].map(k=>`<option${k===(pr.kind||'종가')?' selected':''}>${k}</option>`).join('')}</select></div></div>
     <div class="field"><div><label for="x_r">가정가 ($)</label><input type="number" id="x_r" inputmode="decimal" step="0.01" min="0"></div><div><label for="x_p">체결가 ($)</label><input type="number" id="x_p" inputmode="decimal" step="0.01" min="0"></div></div>
-    <div class="field"><div><label for="x_q">수량(주)</label><input type="number" id="x_q" inputmode="numeric" step="1" min="1"></div><div></div></div>
-    <p class="txt m" id="x_h">종가 기준은 가정가를 자동으로 채웁니다. 시초가 기준은 증권사 화면의 그날 시초가를 직접 입력하세요.</p>
+    <div class="field"><div><label for="x_q">수량(주)</label><input type="number" id="x_q" inputmode="numeric" step="1" min="1" value="${pr.qty||''}"></div><div></div></div>
+    <p class="txt m" id="x_h">${pr.a?`주문안에서 불러왔습니다. 체결가를 입력하세요. 체결 수량이 다르면 수량을 고치세요. `:''}종가 기준은 가정가를 자동으로 채웁니다. 시초가 기준은 증권사 화면의 그날 시초가를 직접 입력하세요.</p>
     <div class="row2"><button class="btn" id="x_add">기록 추가</button></div>`;
   }else if(kind==='portfolio'){
     const p=plan();h+=`<h2>포트폴리오</h2>`;
@@ -447,9 +447,11 @@ function openSheet(kind){
   if(kind.startsWith('etf:')){const a=kind.slice(4);const m=a==='FX'?SIG.fx:(SIG.pulse&&SIG.pulse[a]);if(m){if(m.dates)scrub(sh.querySelector('svg.spark'),m,a==='FX'?(v=>'₩'+Number(v).toLocaleString('ko-KR',{minimumFractionDigits:2,maximumFractionDigits:2})):(m.kind==='index'?(v=>Number(v).toFixed(2)):usd),a==='FX'?'#ffb547':HEX[a]);initChart(a)}}
   $('sx').onclick=closeSheet;
   sh.querySelectorAll('[data-open2]').forEach(b=>b.onclick=()=>openSheet(b.dataset.open2));
+  if(kind==='order'){const pp=plan();if(pp)sh.querySelectorAll('[data-fillo]').forEach(b=>b.onclick=()=>{const o=pp.orders[+b.dataset.fillo],sw=pp.orders.some(x=>x.side==='매도');
+      openSheet('fills',{date:SIG.next_exec_date,a:o.a,side:o.side,qty:o.q,kind:(o.side==='매도'||!sw)?'시초가':'종가'})})}
   if(kind==='fills'){
     const fill=async()=>{if($('x_k').value!=='종가')return;const H=await getHist();if(!H||!H.dates)return;const i=H.dates.indexOf($('x_d').value),a=$('x_a').value;
-      if(i>=0&&H[a]&&H[a][i]!=null)$('x_r').value=Number(H[a][i]).toFixed(2);else $('x_h').textContent='그날 종가를 찾지 못했습니다. 직접 입력하세요.'};
+      if(i>=0&&H[a]&&H[a][i]!=null)$('x_r').value=Number(H[a][i]).toFixed(2);else $('x_h').textContent='그날 종가는 마감 후 데이터가 갱신돼야 자동으로 채워집니다. 지금은 증권사 화면의 값을 직접 입력하세요.'};
     ['x_d','x_a','x_k'].forEach(id=>$(id).onchange=fill);fill();
     $('x_add').onclick=()=>{const n=id=>parseFloat($(id).value),f={id:Date.now(),date:$('x_d').value,a:$('x_a').value,side:$('x_s').value,kind:$('x_k').value,ref:n('x_r'),px:n('x_p'),qty:Math.floor(n('x_q'))};
       if(!f.date||!(f.ref>0)||!(f.px>0)||!(f.qty>0)){$('x_h').textContent='가정가·체결가·수량을 모두 입력하세요.';return}

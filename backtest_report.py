@@ -2,6 +2,7 @@
 기간: 마지막 거래일에서 거꾸로 15년(252거래일×15). V20 = 종가 기준 지수(daily_signal.v20_nav), 비교 = TQQQ 매수 후 보유."""
 import json, re, sys
 import numpy as np
+import pandas as pd
 import daily_signal as D
 
 NAMES = ["CASH", "QQQ", "QLD", "TQQQ"]
@@ -39,19 +40,24 @@ def load_fx(idx, extra=None, base_path=None):
 
 def krw_tax_years(idx, ex, O, C, fx, s0, cost, cap=1e8):
     """V20을 원화로 환산하고 해외주식 양도세(22%, 연 250만 공제, 연말 납부)를 반영한 연도별 결과.
-    매도 시 취득원가 대비 이익을 실현으로 보고(갈아타기 매수는 종가, 현금 매수는 시가), 마지막 해 세금은 올해 말 납부 가정(예상)."""
+    매도 시 취득원가 대비 이익을 실현으로 보고(갈아타기 매수는 종가, 현금 매수는 시가). 납부는 다음 해 4월 30일 일부 매도, 아직 안 낸 세금은 마지막 날에 정산(예상)."""
     n = len(idx)
     if not np.all(np.isfinite(fx[s0:n])):
         return None
 
+    # 날짜: 매년 4월 30일(휴장이면 직전 거래일)에 전년 귀속 세금만큼 일부 매도해 납부(TAX_RESERVE_V2).
+    apr = {}
+    for i in range(s0, n):
+        if idx[i] <= pd.Timestamp(year=idx[i].year, month=4, day=30):
+            apr[idx[i].year] = i
+    apr_days = set(apr.values())
+
     def sim(tax):
-        eu = cap / fx[s0]; basis = cap; gains = 0.0; yr = idx[s0].year; ye = {}; taxes = {}
+        eu = cap / fx[s0]; basis = cap; gains = 0.0; yr = idx[s0].year; ye = {}; taxes = {}; due = 0.0
         for i in range(s0 + 1, n):
             if idx[i].year != yr:
-                t = 0.0
-                if tax:
-                    t = TAX_RATE * max(0.0, gains - TAX_DED); b0 = eu; eu -= t / fx[i - 1]; basis *= eu / b0
-                ye[yr] = eu * fx[i - 1]; taxes[yr] = t; gains = 0.0; yr = idx[i].year
+                t = TAX_RATE * max(0.0, gains - TAX_DED) if tax else 0.0
+                due = t; ye[yr] = eu * fx[i - 1]; taxes[yr] = t; gains = 0.0; yr = idx[i].year
             p, q = int(ex[i - 1]), int(ex[i])
             if p == q:
                 if p: eu *= C[p][i] / C[p][i - 1]
@@ -63,9 +69,13 @@ def krw_tax_years(idx, ex, O, C, fx, s0, cost, cap=1e8):
                         eu *= (1 - cost); basis = eu * fx[i]
                     else:
                         eu *= (1 - cost) * C[q][i] / O[q][i]; basis = eu / (C[q][i] / O[q][i]) * fx[i]
-        t = 0.0
-        if tax:
-            t = TAX_RATE * max(0.0, gains - TAX_DED); eu -= t / fx[n - 1]
+            if tax and i in apr_days and due > 0:      # 4/30: 전년 세금만큼 보유분 비례 매도(이익이 있으면 올해 실현이익에 포함)
+                val = eu * fx[i]
+                f = min(1.0, due / val) if val > 0 else 0.0
+                if int(ex[i]) != 0: gains += f * (val - basis)
+                eu *= (1 - f); basis *= (1 - f); due = 0.0
+        t = TAX_RATE * max(0.0, gains - TAX_DED) if tax else 0.0
+        if tax: eu -= (t + due) / fx[n - 1]              # 아직 안 낸 세금은 지금 정산한 것으로 가정(예상)
         ye[yr] = eu * fx[n - 1]; taxes[yr] = t
         return ye, taxes
 

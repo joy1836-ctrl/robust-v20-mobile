@@ -232,16 +232,17 @@ def guidance(signal: str, target: str, gate_pass: bool):
 def fetch_fx():
     try:
         import yfinance as yf
-        raw = yf.download("KRW=X", period="6y", interval="1d", auto_adjust=True, progress=False, threads=False)
+        raw = yf.download("KRW=X", period="max", interval="1d", auto_adjust=True, progress=False, threads=False)
         full = E._normalize_ohlcv(raw)["Close"].dropna()
+        full = full[(full > 500) & (full < 3000)]   # 야후 환율 이상치 제거
         s = full.tail(60)
         if len(s) < 5:
             return None
         out = {"usdkrw": float(s.iloc[-1]), "chg": float(s.iloc[-1] / s.iloc[-2] - 1),
                "series": [round(float(x), 2) for x in s],
                "dates": [d.strftime("%Y-%m-%d") for d in s.index],
-               "_hist": {"dates": [d.strftime("%Y-%m-%d") for d in full.index if d.strftime("%Y-%m-%d") >= CHART_BASE_DATE],
-                         "series": [round(float(x), 2) for d, x in full.items() if d.strftime("%Y-%m-%d") >= CHART_BASE_DATE]}}
+               "_hist": {"dates": [d.strftime("%Y-%m-%d") for d in full.index],      # 앱·백테스트 모두 같은 환율(야후) 사용. 저장소 CSV는 야후가 없을 때 예비
+                         "series": [round(float(x), 2) for x in full.values]}}
         prev = full[full.index.year < full.index[-1].year]   # 전년도 마지막 환율 = 올해 수익률 기준점
         if len(prev):
             out["ytd_base"] = round(float(prev.iloc[-1]), 2)

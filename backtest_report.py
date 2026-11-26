@@ -128,7 +128,7 @@ def usd_tax_nav(idx, ex, O, C, s0, cost, cap_usd, ded_usd, rate=None):
     return net
 
 
-def krw_tax_nav(idx, ex, O, C, fx, s0, cost, cap_krw, ded_krw=None, rate=None):
+def krw_tax_nav(idx, ex, O, C, fx, s0, cost, cap_krw, ded_krw=None, rate=None, deduct_unpaid=True):
     """원화 세후 가치(일별). usd_tax_nav 와 같은 규칙인데 환율을 반영한다.
     취득원가·이익은 거래일 환율의 원화로 계산하고, 평가액은 그날 환율로 원화 환산한다."""
     rate = TAX_RATE if rate is None else rate
@@ -161,7 +161,7 @@ def krw_tax_nav(idx, ex, O, C, fx, s0, cost, cap_krw, ded_krw=None, rate=None):
             f = min(1.0, due / val) if val > 0 else 0.0
             if int(ex[i]) != 0: gains += f * (val - basis)
             eu *= (1 - f); basis *= (1 - f); due = 0.0; val = eu * fx[i]
-        net[i] = val - due - rate * max(0.0, gains - ded)
+        net[i] = val - ((due + rate * max(0.0, gains - ded)) if deduct_unpaid else 0.0)
     return net
 
 

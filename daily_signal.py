@@ -306,6 +306,8 @@ def build_signal(data, cfg, meta, integrity, cost_bps=8.0, synthetic=False, fx=N
             nk = BR.krw_tax_nav(idx[:n], np.asarray(ex)[:n], O_, C_, fxv, s0, cost_bps / 10000.0, 1e8)
             v["close_tax_krw"] = float(nk[n - 1] / nk[s0] * V20_BASE)
             v["krw_value_of_1eok"] = float(nk[n - 1])
+            n0k = BR.krw_tax_nav(idx[:n], np.asarray(ex)[:n], O_, C_, fxv, s0, cost_bps / 10000.0, 1e8, rate=0.0)   # 세금 없는 원화 지수
+            v["close_krw"] = float(n0k[n - 1] / n0k[s0] * V20_BASE)
             if pk:
                 v["ytd_tax_krw"] = float(nk[n - 1] / nk[pk[-1]] - 1.0)
     except Exception as e:

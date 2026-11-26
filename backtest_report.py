@@ -38,10 +38,11 @@ def load_fx(idx, extra=None, base_path=None):
     return out.values.astype(float)
 
 
-def krw_tax_years(idx, ex, O, C, fx, s0, cost, cap=1e8):
+def krw_tax_years(idx, ex, O, C, fx, s0, cost, cap=1e8, ded=None):
     """V20을 원화로 환산하고 해외주식 양도세(22%, 연 250만 공제, 연말 납부)를 반영한 연도별 결과.
     매도 시 취득원가 대비 이익을 실현으로 보고(갈아타기 매수는 종가, 현금 매수는 시가). 납부는 다음 해 4월 30일 일부 매도, 아직 안 낸 세금은 마지막 날에 정산(예상)."""
     n = len(idx)
+    ded = TAX_DED if ded is None else ded
     if not np.all(np.isfinite(fx[s0:n])):
         return None
 
@@ -56,7 +57,7 @@ def krw_tax_years(idx, ex, O, C, fx, s0, cost, cap=1e8):
         eu = cap / fx[s0]; basis = cap; gains = 0.0; yr = idx[s0].year; ye = {}; taxes = {}; due = 0.0
         for i in range(s0 + 1, n):
             if idx[i].year != yr:
-                t = TAX_RATE * max(0.0, gains - TAX_DED) if tax else 0.0
+                t = TAX_RATE * max(0.0, gains - ded) if tax else 0.0
                 due = t; ye[yr] = eu * fx[i - 1]; taxes[yr] = t; gains = 0.0; yr = idx[i].year
             p, q = int(ex[i - 1]), int(ex[i])
             if p == q:
@@ -74,7 +75,7 @@ def krw_tax_years(idx, ex, O, C, fx, s0, cost, cap=1e8):
                 f = min(1.0, due / val) if val > 0 else 0.0
                 if int(ex[i]) != 0: gains += f * (val - basis)
                 eu *= (1 - f); basis *= (1 - f); due = 0.0
-        t = TAX_RATE * max(0.0, gains - TAX_DED) if tax else 0.0
+        t = TAX_RATE * max(0.0, gains - ded) if tax else 0.0
         if tax: eu -= (t + due) / fx[n - 1]              # 아직 안 낸 세금은 지금 정산한 것으로 가정(예상)
         ye[yr] = eu * fx[n - 1]; taxes[yr] = t
         return ye, taxes
@@ -150,6 +151,16 @@ def build_report(idx, ex_full, v_nav, t_close, cost, label_extra="", krw=None):
                 x = rows.get(r["y"])
                 if x: r.update({k: float(v) for k, v in x.items()})
             krw_sum["fx_asof"] = idx[n - 1].strftime("%Y-%m-%d")
+        # 달러 기준 세후: 환율을 1로 두고, 시작 환율로 원금(1억 원)과 공제(250만 원)를 달러로 바꿔 쓴다.
+        f0 = float(krw["fx"][s])
+        ru = krw_tax_years(idx, np.asarray(ex_full)[:n], krw["O"], krw["C"], np.ones(n), s, krw["cost"], cap=1e8 / f0, ded=TAX_DED / f0)
+        if ru:
+            rows_u, sum_u = ru
+            for r in cal:
+                x = rows_u.get(r["y"])
+                if x: r["ut"] = float(x["kt"])
+            sum_u = {k: sum_u[k] for k in ("cagr_pre", "cagr_post")}
+            krw_sum = dict(krw_sum or {}, usd=sum_u)
     end = d[-1].strftime("%Y-%m-%d")
     return {"asof": f"ROBUST V20 vs TQQQ | Fixed 15Y Backtest as of {end}{label_extra}", "start": d[0].strftime("%Y-%m-%d"), "end": end, "cost": cost,
             "full": full, "activity": activity, "exposure": exposure, "cal": cal, "roll": roll, "series": series, "trans": trans,

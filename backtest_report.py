@@ -194,7 +194,8 @@ def build_report(idx, ex_full, v_nav, t_close, cost, label_extra="", krw=None):
         a = max(ii[0] - 1, 0)
         b = ii[-1]
         sr_, tr_ = r_eq[a:b + 1], t_eq[a:b + 1]
-        cal.append({"y": y, "days": len(ii), "r": float(sr_[-1] / sr_[0] - 1), "t": float(tr_[-1] / tr_[0] - 1),
+        ty = [t for t in trans if t["date"].startswith(str(y))]
+        cal.append({"y": y, "days": len(ii), "sw": len(ty), "od": sum((t["from"] != "CASH") + (t["to"] != "CASH") for t in ty), "r": float(sr_[-1] / sr_[0] - 1), "t": float(tr_[-1] / tr_[0] - 1),
                     "rm": float((sr_ / np.maximum.accumulate(sr_) - 1).min()), "tm": float((tr_ / np.maximum.accumulate(tr_) - 1).min())})
     # 롤링
     roll, series = {}, {}

@@ -1,7 +1,8 @@
 """백테스트 보고서 데이터(D)를 최신 시세로 다시 만든다. docs/backtest.html 의 `const D = {...};` 줄을 갱신하는 데 쓴다.
 기간: 마지막 거래일에서 거꾸로 15년(252거래일×15). V20 = 종가 기준 지수(daily_signal.v20_nav), 비교 = TQQQ 매수 후 보유."""
-import json, re
+import json, re, sys
 import numpy as np
+import pandas as pd
 import daily_signal as D
 
 NAMES = ["CASH", "QQQ", "QLD", "TQQQ"]
@@ -19,13 +20,84 @@ def _stats(eq, ret):
             "Calmar": float(cagr / abs(mdd)) if mdd else 0.0}
 
 
-def build_report(idx, ex, v_nav, t_close, cost, label_extra=""):
+TAX_RATE, TAX_DED = 0.22, 2.5e6
+FX_CSV = "fx_usdkrw_daily.csv"
+
+
+def load_fx(idx, extra=None, base_path=None):
+    """원/달러 환율(거래일 정렬, 앞 값으로 채움). 저장소 CSV + 오늘 받은 최근 환율(extra={'dates','series'})."""
+    import pandas as pd
+    from pathlib import Path
+    path = Path(base_path) if base_path else Path(__file__).with_name(FX_CSV)
+    s = pd.read_csv(path, parse_dates=["date"]).set_index("date")["usd_krw"].astype(float)
+    if extra and extra.get("dates"):
+        e = pd.Series(extra["series"], index=pd.to_datetime(extra["dates"]), dtype=float)
+        s = pd.concat([s[s.index < e.index[0]], e])
+    s = s[~s.index.duplicated(keep="last")].sort_index()
+    out = s.reindex(s.index.union(idx)).ffill().reindex(idx)
+    return out.values.astype(float)
+
+
+def krw_tax_years(idx, ex, O, C, fx, s0, cost, cap=1e8):
+    """V20을 원화로 환산하고 해외주식 양도세(22%, 연 250만 공제, 연말 납부)를 반영한 연도별 결과.
+    매도 시 취득원가 대비 이익을 실현으로 보고(갈아타기 매수는 종가, 현금 매수는 시가). 납부는 다음 해 4월 30일 일부 매도, 아직 안 낸 세금은 마지막 날에 정산(예상)."""
+    n = len(idx)
+    if not np.all(np.isfinite(fx[s0:n])):
+        return None
+
+    # 날짜: 매년 4월 30일(휴장이면 직전 거래일)에 전년 귀속 세금만큼 일부 매도해 납부(TAX_RESERVE_V2).
+    apr = {}
+    for i in range(s0, n):
+        if idx[i] <= pd.Timestamp(year=idx[i].year, month=4, day=30):
+            apr[idx[i].year] = i
+    apr_days = set(apr.values())
+
+    def sim(tax):
+        eu = cap / fx[s0]; basis = cap; gains = 0.0; yr = idx[s0].year; ye = {}; taxes = {}; due = 0.0
+        for i in range(s0 + 1, n):
+            if idx[i].year != yr:
+                t = TAX_RATE * max(0.0, gains - TAX_DED) if tax else 0.0
+                due = t; ye[yr] = eu * fx[i - 1]; taxes[yr] = t; gains = 0.0; yr = idx[i].year
+            p, q = int(ex[i - 1]), int(ex[i])
+            if p == q:
+                if p: eu *= C[p][i] / C[p][i - 1]
+            else:
+                if p:
+                    eu *= O[p][i] / C[p][i - 1]; gains += eu * fx[i] - basis; eu *= (1 - cost)
+                if q:
+                    if p:
+                        eu *= (1 - cost); basis = eu * fx[i]
+                    else:
+                        eu *= (1 - cost) * C[q][i] / O[q][i]; basis = eu / (C[q][i] / O[q][i]) * fx[i]
+            if tax and i in apr_days and due > 0:      # 4/30: 전년 세금만큼 보유분 비례 매도(이익이 있으면 올해 실현이익에 포함)
+                val = eu * fx[i]
+                f = min(1.0, due / val) if val > 0 else 0.0
+                if int(ex[i]) != 0: gains += f * (val - basis)
+                eu *= (1 - f); basis *= (1 - f); due = 0.0
+        t = TAX_RATE * max(0.0, gains - TAX_DED) if tax else 0.0
+        if tax: eu -= (t + due) / fx[n - 1]              # 아직 안 낸 세금은 지금 정산한 것으로 가정(예상)
+        ye[yr] = eu * fx[n - 1]; taxes[yr] = t
+        return ye, taxes
+
+    a, _ = sim(False); b, tb = sim(True)
+    rows = {}; pa = pb = cap
+    for y in sorted(a):
+        rows[y] = {"kr": a[y] / pa - 1.0, "kt": b[y] / pb - 1.0, "tax": float(tb[y]), "kv": float(a[y]), "ktv": float(b[y])}
+        pa, pb = a[y], b[y]
+    yrs = (idx[n - 1] - idx[s0]).days / 365.25
+    last = sorted(a)[-1]
+    summ = {"cap": cap, "cagr_pre": float((a[last] / cap) ** (1 / yrs) - 1), "cagr_post": float((b[last] / cap) ** (1 / yrs) - 1),
+            "final_pre": float(a[last]), "final_post": float(b[last]), "total_tax": float(sum(tb.values()))}
+    return rows, summ
+
+
+def build_report(idx, ex_full, v_nav, t_close, cost, label_extra="", krw=None):
     """idx: 날짜(DatetimeIndex), ex: 시가 상태, v_nav: V20 가치(시계열, 길이 n), t_close: TQQQ 가격."""
     n = len(idx)
     L = YEARS * H
     s = max(0, n - 1 - L)
     d = idx[s:n]
-    ex = np.asarray(ex)[:n][s:]
+    ex = np.asarray(ex_full)[:n][s:]
     r_eq = np.asarray(v_nav, float)[s:] / v_nav[s]
     t_eq = np.asarray(t_close, float)[s:] / t_close[s]
     m = len(r_eq) - 1
@@ -69,18 +141,34 @@ def build_report(idx, ex, v_nav, t_close, cost, label_extra=""):
                          "ret_win": float(rw.mean()), "mdd_win": float(mw.mean()), "both_win": float((rw & mw).mean())}
         if k in (1, 3, 5, 10):
             series[f"{k}Y"] = {"d": [x.strftime("%Y-%m-%d") for x in d[:nw]], "r": [round(float(x), 4) for x in rc], "t": [round(float(x), 4) for x in tc]}
+    krw_sum = None
+    if krw:
+        res = krw_tax_years(idx, np.asarray(ex_full)[:n], krw["O"], krw["C"], krw["fx"], s, krw["cost"])
+        if res:
+            rows, krw_sum = res
+            for r in cal:
+                x = rows.get(r["y"])
+                if x: r.update({k: float(v) for k, v in x.items()})
+            krw_sum["fx_asof"] = idx[n - 1].strftime("%Y-%m-%d")
     end = d[-1].strftime("%Y-%m-%d")
     return {"asof": f"ROBUST V20 vs TQQQ | Fixed 15Y Backtest as of {end}{label_extra}", "start": d[0].strftime("%Y-%m-%d"), "end": end, "cost": cost,
             "full": full, "activity": activity, "exposure": exposure, "cal": cal, "roll": roll, "series": series, "trans": trans,
-            "eq": {"d": [x.strftime("%Y-%m-%d") for x in d], "s": [round(float(x), 3) for x in r_eq], "t": [round(float(x), 4) for x in t_eq], "st": [int(x) for x in ex]}}
+            "krw": krw_sum, "eq": {"d": [x.strftime("%Y-%m-%d") for x in d], "s": [round(float(x), 3) for x in r_eq], "t": [round(float(x), 4) for x in t_eq], "st": [int(x) for x in ex]}}
 
 
-def make(data, cfg, cost_bps=8.0):
+def make(data, cfg, cost_bps=8.0, fx_hist=None):
     f, ex, sr = D.run_full(data, cfg, cost_bps)
     idx = data["QQQ"].index
     n = len(idx)
     v = D.v20_nav(sr, n, ex, f, cost_bps)
-    return build_report(idx, ex, v, np.asarray(f["TQQQ_CLOSE"], float)[:n], cost_bps / 10000.0)
+    O = {k: np.asarray(f[f"{a}_OPEN"], float)[:n] for k, a in ((1, "QQQ"), (2, "QLD"), (3, "TQQQ"))}
+    C = {k: np.asarray(f[f"{a}_CLOSE"], float)[:n] for k, a in ((1, "QQQ"), (2, "QLD"), (3, "TQQQ"))}
+    try:
+        fx = load_fx(idx, fx_hist)
+        krw = {"O": O, "C": C, "fx": fx, "cost": cost_bps / 10000.0}
+    except Exception as e:
+        print(f"[백테스트] 환율 없음, 원화·세후 생략: {e}", file=sys.stderr); krw = None
+    return build_report(idx, ex, v, np.asarray(f["TQQQ_CLOSE"], float)[:n], cost_bps / 10000.0, krw=krw)
 
 
 def write_html(path, rep):

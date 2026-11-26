@@ -71,6 +71,8 @@ th{font-weight:500;color:var(--ink2);font-size:12px;background:var(--surface)}
 td{font-family:var(--mono)}
 th:first-child,td:first-child{text-align:left;font-family:var(--font)}
 table.wrapt td,table.wrapt th{white-space:normal}
+#krwTbl th,#krwTbl td{padding:7px 5px}
+#krwTbl td:first-child,#krwTbl th:first-child{text-align:left;padding-left:2px}
 table.wrapt td:last-child{text-align:right}
 td.pos{color:var(--good)} td.neg{color:var(--bad)}
 .bar{display:flex;height:22px;border-radius:4px;overflow:hidden;gap:2px;margin:8px 0 10px}
@@ -160,6 +162,9 @@ pre{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:
     <p class="note" style="margin-top:8px" id="calNote"></p>
     <p class="note" style="margin-top:4px" id="calNote2"></p></div>
   <div class="card"><h2>연도별 상세</h2><div class="tablewrap"><table id="calTbl"></table></div></div>
+  <div class="card" id="krwCard" hidden><h2>원화 · 세후 수익률 <span id="krwCap" style="font-size:12px;font-weight:500"></span></h2>
+    <div class="tablewrap"><table id="krwTbl" style="font-size:12.5px"></table></div>
+    <p class="note" style="margin-top:8px" id="krwNote"></p></div>
 </section>
 
 <section class="panel" id="sig">
@@ -372,6 +377,14 @@ function renderYear(){
     const f=D.full,c=`<tr style="font-weight:800;background:rgba(34,211,238,.10)"><td colspan="2">연평균 수익률<br><span style="font-weight:500;font-size:11.5px">복리(CAGR)·전체 ${D.start.slice(0,4)}~${D.end.slice(0,4)}</span></td><td class="${cls(f.CAGR.r)}">${spct(f.CAGR.r)}</td><td class="${cls(f.CAGR.t)}">${spct(f.CAGR.t)}</td><td class="${cls(f.CAGR.r-f.CAGR.t)}">${spct(f.CAGR.r-f.CAGR.t)}</td><td>${pct(f.MDD.r)}</td><td>${pct(f.MDD.t)}</td></tr>`;
     return c+row(`단순 평균 (${full.length}개 온전한 연도)`,av)+row('중앙값',md);
   })();
+  {const K=D.krw,card=$('krwCard');
+    if(K&&D.cal.some(r=>r.ktv!=null)){card.hidden=false;
+      $('krwCap').textContent='(환율·양도세 반영, '+(K.cap/1e8)+'억 원 기준)';
+      $('krwTbl').innerHTML='<tr><th>연도</th><th>달러 수익률</th><th>원화·세후<br><span style="font-weight:400;font-size:11px">환율+양도세 포함</span></th></tr>'+
+        D.cal.filter(r=>r.ktv!=null).map(r=>{const last=r.y===+D.end.slice(0,4);return `<tr><td>${r.y}${last?'<small>(예상)</small>':''}</td><td class="${cls(r.r)}">${spct(r.r)}</td><td class="${cls(r.kt)}">${spct(r.kt)}</td></tr>`}).join('')+
+        `<tr style="font-weight:800;background:rgba(34,211,238,.10)"><td>연평균<br><span style="font-weight:500;font-size:11.5px">복리(CAGR)</span></td><td class="${cls(D.full.CAGR.r)}">${spct(D.full.CAGR.r)}</td><td class="${cls(K.cagr_post)}">${spct(K.cagr_post)}</td></tr>`;
+      $('krwNote').textContent='달러 = 위 표와 같은 V20 수익률. 원화·세후 = 환율 변동을 반영하고 해외주식 양도세 22%(연 250만 원 공제)를 낸 뒤의 수익률입니다. 세금은 다음 해 4월 30일에 보유분 일부를 팔아 납부한다고 보고(TAX_RESERVE_V2), 그해 수익률에서 차감됩니다. 아직 안 낸 세금은 마지막 날에 낸 것으로 계산한 예상치입니다. 환율 스프레드·슬리피지·배당세는 반영하지 않았고, 환율은 일별 종가(거래일 기준) 근사입니다. 실제 신고는 증권사 양도세 서비스나 세무 전문가와 확인하세요.'}
+    else card.hidden=true}
   $('calNote2').textContent='평균은 거래일 240일 이상인 온전한 연도만 단순 산술평균한 값입니다(연도별 수익률의 평균, 낙폭 열은 연중 최대낙폭의 평균). 연평균 수익률(CAGR)은 전체 기간을 복리로 환산한 값이고, 마지막 열의 낙폭은 전체 기간 최대낙폭입니다.';
 }
 

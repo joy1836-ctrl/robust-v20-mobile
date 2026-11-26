@@ -289,6 +289,29 @@ def build_signal(data, cfg, meta, integrity, cost_bps=8.0, synthetic=False, fx=N
     closes = {a: pulse[a]["close"] for a in pulse}
     pulse["V20"] = v20_pulse(sr, n, data["QQQ"].index, ex, f, cost_bps=cost_bps)
     v = pulse["V20"]
+    try:   # 세후 지수: 양도세 22%·연 250만 원 공제·다음 해 4/30 일부 매도 납부, 1억 원 투자 가정(달러 기준)
+        import backtest_report as BR
+        s0 = chart_start(idx[:n])
+        fxv = BR.load_fx(idx[:n], (fx or {}).get("_hist"))
+        O_ = {k: np.asarray(f[f"{a}_OPEN"], float)[:n] for k, a in ((1, "QQQ"), (2, "QLD"), (3, "TQQQ"))}
+        C_ = {k: np.asarray(f[f"{a}_CLOSE"], float)[:n] for k, a in ((1, "QQQ"), (2, "QLD"), (3, "TQQQ"))}
+        f0 = float(fxv[s0])
+        net = BR.usd_tax_nav(idx[:n], np.asarray(ex)[:n], O_, C_, s0, cost_bps / 10000.0, 1e8 / f0, BR.TAX_DED / f0)
+        pk = [j for j in range(s0, n) if idx[j].year < idx[n - 1].year]
+        v["close_tax"] = float(net[n - 1] / net[s0] * V20_BASE)
+        v["tax_cap_krw"] = 1e8
+        if pk:
+            v["ytd_tax"] = float(net[n - 1] / net[pk[-1]] - 1.0)
+        if np.all(np.isfinite(fxv[s0:n])):     # 환율까지 반영한 원화 세후
+            nk = BR.krw_tax_nav(idx[:n], np.asarray(ex)[:n], O_, C_, fxv, s0, cost_bps / 10000.0, 1e8)
+            v["close_tax_krw"] = float(nk[n - 1] / nk[s0] * V20_BASE)
+            v["krw_value_of_1eok"] = float(nk[n - 1])
+            n0k = BR.krw_tax_nav(idx[:n], np.asarray(ex)[:n], O_, C_, fxv, s0, cost_bps / 10000.0, 1e8, rate=0.0)   # 세금 없는 원화 지수
+            v["close_krw"] = float(n0k[n - 1] / n0k[s0] * V20_BASE)
+            if pk:
+                v["ytd_tax_krw"] = float(nk[n - 1] / nk[pk[-1]] - 1.0)
+    except Exception as e:
+        print(f"[세후지수] 계산 실패(무시): {e}", file=sys.stderr)
     if fx and fx.get("ytd_base") and v.get("ytd") is not None:   # 원화 기준 = (1+달러수익률) × 환율변화 − 1
         v["ytd_krw"] = float((1.0 + v["ytd"]) * (fx["usdkrw"] / fx["ytd_base"]) - 1.0)
     c0 = chart_start(idx[:n])                  # 기준일 이후 이력. 차트용 장기 이력은 signal.json이 아니라 history.json에 따로 저장

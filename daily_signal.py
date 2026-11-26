@@ -382,7 +382,7 @@ def main():
     if bt.exists() and not a.self_test:   # 백테스트 화면 데이터도 최신으로 갱신(실패해도 정식 신호에는 영향 없음)
         try:
             import backtest_report as BR
-            BR.write_html(bt, BR.make(data, cfg, a.cost_bps))
+            BR.write_html(bt, BR.make(data, cfg, a.cost_bps, fx_hist=fxh))
             print("[백테스트] 갱신:", data["QQQ"].index[-1].date(), file=sys.stderr)
         except Exception as e:
             print(f"[백테스트] 갱신 실패(무시): {e}", file=sys.stderr)

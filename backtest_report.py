@@ -128,6 +128,43 @@ def usd_tax_nav(idx, ex, O, C, s0, cost, cap_usd, ded_usd, rate=None):
     return net
 
 
+def krw_tax_nav(idx, ex, O, C, fx, s0, cost, cap_krw, ded_krw=None, rate=None):
+    """원화 세후 가치(일별). usd_tax_nav 와 같은 규칙인데 환율을 반영한다.
+    취득원가·이익은 거래일 환율의 원화로 계산하고, 평가액은 그날 환율로 원화 환산한다."""
+    rate = TAX_RATE if rate is None else rate
+    ded = TAX_DED if ded_krw is None else ded_krw
+    n = len(idx)
+    apr = {}
+    for i in range(s0, n):
+        if idx[i] <= pd.Timestamp(year=idx[i].year, month=4, day=30):
+            apr[idx[i].year] = i
+    apr_days = set(apr.values())
+    eu = cap_krw / fx[s0]; basis = cap_krw; gains = 0.0; yr = idx[s0].year; due = 0.0
+    net = np.full(n, np.nan)
+    net[s0] = cap_krw
+    for i in range(s0 + 1, n):
+        if idx[i].year != yr:
+            due += rate * max(0.0, gains - ded); gains = 0.0; yr = idx[i].year
+        p, q = int(ex[i - 1]), int(ex[i])
+        if p == q:
+            if p: eu *= C[p][i] / C[p][i - 1]
+        else:
+            if p:
+                eu *= O[p][i] / C[p][i - 1]; gains += eu * fx[i] - basis; eu *= (1 - cost)
+            if q:
+                if p:
+                    eu *= (1 - cost); basis = eu * fx[i]
+                else:
+                    eu *= (1 - cost) * C[q][i] / O[q][i]; basis = eu / (C[q][i] / O[q][i]) * fx[i]
+        val = eu * fx[i]
+        if i in apr_days and due > 0:
+            f = min(1.0, due / val) if val > 0 else 0.0
+            if int(ex[i]) != 0: gains += f * (val - basis)
+            eu *= (1 - f); basis *= (1 - f); due = 0.0; val = eu * fx[i]
+        net[i] = val - due - rate * max(0.0, gains - ded)
+    return net
+
+
 def build_report(idx, ex_full, v_nav, t_close, cost, label_extra="", krw=None):
     """idx: 날짜(DatetimeIndex), ex: 시가 상태, v_nav: V20 가치(시계열, 길이 n), t_close: TQQQ 가격."""
     n = len(idx)

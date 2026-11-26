@@ -92,6 +92,42 @@ def krw_tax_years(idx, ex, O, C, fx, s0, cost, cap=1e8, ded=None):
     return rows, summ
 
 
+def usd_tax_nav(idx, ex, O, C, s0, cost, cap_usd, ded_usd, rate=None):
+    """달러 기준 세후 가치(일별). 양도세 22%, 연 공제, 다음 해 4월 30일 보유분 일부 매도로 납부(TAX_RESERVE_V2).
+    세후 가치 = 보유 평가액 - (이미 실현한 이익에 대한 미납 세금). 평가이익(미실현)에는 세금을 빼지 않는다.
+    반환: (net, year_end_base) net[i] (i>=s0) = 그날 종가 기준 세후 가치(달러)."""
+    rate = TAX_RATE if rate is None else rate
+    n = len(idx)
+    apr = {}
+    for i in range(s0, n):
+        if idx[i] <= pd.Timestamp(year=idx[i].year, month=4, day=30):
+            apr[idx[i].year] = i
+    apr_days = set(apr.values())
+    eu = cap_usd; basis = cap_usd; gains = 0.0; yr = idx[s0].year; due = 0.0
+    net = np.full(n, np.nan)
+    net[s0] = eu
+    for i in range(s0 + 1, n):
+        if idx[i].year != yr:
+            due += rate * max(0.0, gains - ded_usd); gains = 0.0; yr = idx[i].year
+        p, q = int(ex[i - 1]), int(ex[i])
+        if p == q:
+            if p: eu *= C[p][i] / C[p][i - 1]
+        else:
+            if p:
+                eu *= O[p][i] / C[p][i - 1]; gains += eu - basis; eu *= (1 - cost)
+            if q:
+                if p:
+                    eu *= (1 - cost); basis = eu
+                else:
+                    eu *= (1 - cost) * C[q][i] / O[q][i]; basis = eu / (C[q][i] / O[q][i])
+        if i in apr_days and due > 0:
+            f = min(1.0, due / eu) if eu > 0 else 0.0
+            if int(ex[i]) != 0: gains += f * (eu - basis)
+            eu *= (1 - f); basis *= (1 - f); due = 0.0
+        net[i] = eu - due - rate * max(0.0, gains - ded_usd)
+    return net
+
+
 def build_report(idx, ex_full, v_nav, t_close, cost, label_extra="", krw=None):
     """idx: 날짜(DatetimeIndex), ex: 시가 상태, v_nav: V20 가치(시계열, 길이 n), t_close: TQQQ 가격."""
     n = len(idx)

@@ -25,7 +25,7 @@ FX_CSV = "fx_usdkrw_daily.csv"
 
 
 def load_fx(idx, extra=None, base_path=None):
-    """원/달러 환율(거래일 정렬, 앞 값으로 채움). 저장소 CSV + 오늘 받은 최근 환율(extra={'dates','series'})."""
+    """원/달러 환율(거래일 정렬, 앞 값으로 채움). 야후(KRW=X) 전체 이력이 있으면 그것만 쓰고, 없는 구간만 저장소 CSV로 채움(extra={"dates","series"})."""
     import pandas as pd
     from pathlib import Path
     path = Path(base_path) if base_path else Path(__file__).with_name(FX_CSV)

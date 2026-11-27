@@ -170,7 +170,7 @@ const pxf=(a,m)=>m.kind==='index'?Number(m.close).toLocaleString('en-US',{minimu
 const usd=(x,d=2)=>'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 const sp=(x,d=2)=>(x>=0?'+':'')+(x*100).toFixed(d)+'%';
 const sgn=x=>x>=0?'var(--green)':'var(--red)';
-const APP_VER='2026.11.26-c';
+const APP_VER='2026.11.27-a';
 const BUF=0.015,FEE=0.0005;
 const krw=x=>(SIG&&SIG.fx&&SIG.fx.usdkrw)?(x<0?'-':'')+'₩'+Math.round(Math.abs(x)*SIG.fx.usdkrw).toLocaleString('ko-KR'):'';
 const wonL=x=>{const t=krw(x);return t?`<span class="won num">${t}</span>`:''};
@@ -345,6 +345,8 @@ function intrCard(){
     ${row('급락(crash) 조건','추세 '+(below?'180일선 아래':'위')+' · 252일 고점 대비 '+sp(i.dd252)+' (−15%) · 변동성 '+(i.vol40*100).toFixed(1)+'% (30%)',!i.crash)}
     <p class="txt m num">핵심 점수 ${i.core_score}/3 · 진입 게이트 ${i.entry_gate_pass?'OPEN':'CLOSED'} · RSI ${i.rsi14.toFixed(1)} · MFI ${i.mfi14.toFixed(1)}</p></div>`;
 }
+function isaCard(){const I=SIG&&SIG.isa;if(!I)return '';const NM={CASH:'현금',TIGER1X:'TIGER 나스닥100 (1배)',TIGER2X:'TIGER 나스닥100 레버리지 (2배)'},SG={HOLD:'유지',BUY:'매수',SELL_ALL:'전량 매도',SWITCH:'종목 교체'};
+  return `<a href="isa.html" style="text-decoration:none;color:inherit;display:block"><div class="card"><div class="eyebrow">${IC.spark}<span>ISA 계좌 신호</span></div><div style="margin:12px 0 2px;font-size:clamp(20px,6vw,26px);font-weight:900;color:var(--cyan)">${esc(NM[I.target_asset])}</div><p class="txt m num" style="margin:4px 0 0">${esc(SG[I.signal])} · 한국 ${esc(I.kr_exec_date)} 시초 · 자세히 보기 ›</p></div></a>`}
 function render(){
   const root=$('app');
   if(!SIG){root.innerHTML=head(null)+`<div class="card"><h2 style="margin:0 0 8px;font-size:22px">신호를 불러오지 못했습니다</h2><p class="txt m">${esc(loadErr||'signal.json이 없습니다.')}<br>GitHub Actions가 한 번 실행된 뒤에 표시됩니다. 오른쪽 위 새로고침을 눌러 다시 시도하세요.</p></div>`+foot();bind();return}
@@ -390,7 +392,7 @@ function render(){
   const fx=s.fx?`<div class="card tap fx" data-etf="FX"><div class="ch"><div><h2>USD / KRW</h2><div class="s">달러 자산의 원화 가치</div></div>${IC.chev.replace('<svg','<svg class="chev"')}</div><div style="margin:14px 0"><span class="v num">₩${Math.round(s.fx.usdkrw).toLocaleString()}</span><span class="d num" style="color:${s.fx.chg>=0?'var(--red)':'var(--cyan)'}">${sp(s.fx.chg)}</span></div>${spark(s.fx.series,'#ffb547',{id:'sgfx',h:90})}</div>`:'';
   const btns=`<div class="btns"><button class="bt o" data-open="order">${IC.receipt}주문</button><button class="bt p" data-open="portfolio">${IC.wallet}포트폴리오</button><button class="bt s" data-open="settings">${IC.gear}계좌설정</button></div>`;
   const upd=NEWVER?`<div class="updb"><div><b>새 버전이 있습니다</b><small>${APP_VER} → ${esc(NEWVER)}</small></div><button id="doUpd">업데이트</button></div>`:'';
-  root.innerHTML=head(chips)+upd+banners+intrCard()+clock+strat+acc+pulse+cond+indc+port+fx+fillsCard()+btns+foot();
+  root.innerHTML=head(chips)+upd+banners+intrCard()+clock+strat+acc+isaCard()+pulse+cond+indc+port+fx+fillsCard()+btns+foot();
   bind();
 }
 const head=chips=>`<div class="top"><div class="logo">${IC.logo}</div><div class="grow"><h1>ROBUST V20</h1><div class="sub">Production Freeze 1.0 · Read Only Strategy</div></div><button class="iconbtn ${loading?'spin':''}" id="rf" aria-label="새로고침">${IC.refresh}</button></div>${chips||''}`;

@@ -253,6 +253,31 @@ def fetch_fx():
         return None
 
 
+# ISA 계좌용 신호(B 규칙): V20 신호는 그대로 두고 보유 종목만 한국 상장 TIGER 1배·2배로 바꾼다. 엔진·설정은 건드리지 않는다.
+ISA_MAP = {0: "CASH", 1: "TIGER1X", 2: "TIGER1X", 3: "TIGER2X"}
+ISA_ETF = {"TIGER1X": {"name": "TIGER 미국나스닥100", "code": "133690", "mult": 1},
+           "TIGER2X": {"name": "TIGER 미국나스닥100레버리지(합성 H)", "code": "418660", "mult": 2}}
+
+
+def isa_block(prev, tgt, asof, hist):
+    """asof=미국 종가 기준일. 미국 종가 신호 → 한국 다음 영업일 시초(공휴일은 반영하지 않음)."""
+    d = asof + timedelta(days=1)
+    while d.weekday() >= 5:
+        d += timedelta(days=1)
+    pa, ta = ISA_MAP[prev], ISA_MAP[tgt]
+    if pa == ta:
+        sig = "HOLD"
+    elif ta == "CASH":
+        sig = "SELL_ALL"
+    elif pa == "CASH":
+        sig = "BUY"
+    else:
+        sig = "SWITCH"
+    return {"rule": "B", "etf": ISA_ETF, "prev_asset": pa, "target_asset": ta, "signal": sig,
+            "kr_exec_date": d.strftime("%Y-%m-%d"), "v20_state": tgt,
+            "history": [{"date": h["date"], "asset": ISA_MAP[h["state"]]} for h in hist]}
+
+
 def build_signal(data, cfg, meta, integrity, cost_bps=8.0, synthetic=False, fx=None):
     f, ex, sr = run_full(data, cfg, cost_bps)
     n = len(data["QQQ"])
@@ -342,6 +367,7 @@ def build_signal(data, cfg, meta, integrity, cost_bps=8.0, synthetic=False, fx=N
             "entry_gate_pass": bool(gate), "crash": bool(crash), "fast_reentry_ready": fast_base,
         },
         "history": [{"date": idx[j].strftime("%Y-%m-%d"), "state": int(ex[j])} for j in range(max(0, n - 40), n)],
+        "isa": isa_block(prev, tgt, asof, [{"date": idx[j].strftime("%Y-%m-%d"), "state": int(ex[j])} for j in range(max(0, n - 40), n)]),
     }
 
 

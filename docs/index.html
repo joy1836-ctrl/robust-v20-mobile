@@ -170,7 +170,7 @@ const pxf=(a,m)=>m.kind==='index'?Number(m.close).toLocaleString('en-US',{minimu
 const usd=(x,d=2)=>'$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 const sp=(x,d=2)=>(x>=0?'+':'')+(x*100).toFixed(d)+'%';
 const sgn=x=>x>=0?'var(--green)':'var(--red)';
-const APP_VER='2026.11.27-a';
+const APP_VER='2026.11.28-a';
 const BUF=0.015,FEE=0.0005;
 const krw=x=>(SIG&&SIG.fx&&SIG.fx.usdkrw)?(x<0?'-':'')+'₩'+Math.round(Math.abs(x)*SIG.fx.usdkrw).toLocaleString('ko-KR'):'';
 const wonL=x=>{const t=krw(x);return t?`<span class="won num">${t}</span>`:''};
@@ -322,7 +322,7 @@ async function getHist(){if(HISTC)return HISTC;try{const r=await fetch('history.
 /* ---------- 새 버전 확인 ---------- */
 let NEWVER='';
 async function checkVer(){
-  try{const r=await fetch('index.html?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const t=await r.text();const m=t.match(/const APP_VER='([^']+)'/);
+  try{const r=await fetch('index.html?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const t=await r.text();const m=t.match(/const APP_VER='2026.11.28-a']+)'/);
     if(m&&m[1]!==APP_VER){NEWVER=m[1];render()}}catch(_){}
 }
 async function doUpdate(){
